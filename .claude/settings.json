@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "extraKnownMarketplaces": {
+    "claude-fix-plugin": {
+      "source": "git",
+      "url": "https://gitlab.quodfinancial.com/mgabbay/claude-fix-plugin"
+    }
+  },
+  "enabledPlugins": {
+    "claude-fix-plugin@claude-fix-plugin": true
+  }
+}
