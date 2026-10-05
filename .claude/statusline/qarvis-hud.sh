@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# J.A.R.V.I.S. HUD status line for Claude Code.
+# Q.A.R.V.I.S. HUD status line for Claude Code.
 # Reads the session JSON Claude Code pipes on stdin and renders a two-line HUD.
 
 input=$(cat)
 
 if ! command -v jq >/dev/null 2>&1; then
-  printf '\033[38;5;45m◉ J.A.R.V.I.S.\033[0m  \033[38;5;214minstall jq to bring the HUD online\033[0m\n'
+  printf '\033[38;5;45m◉ Q.A.R.V.I.S.\033[0m  \033[38;5;214minstall jq to bring the HUD online\033[0m\n'
   exit 0
 fi
 
@@ -46,8 +46,8 @@ if   (( 10#$hour < 12 )); then greet="Good morning"
 elif (( 10#$hour < 18 )); then greet="Good afternoon"
 else greet="Good evening"; fi
 
-line1="${B}${reactor} J.A.R.V.I.S.${X} ${D}│${X} ${C}${model:-online}${X}"
-[[ -n $style && $style != "JARVIS" ]] && line1+=" ${D}(${style})${X}"
+line1="${B}${reactor} Q.A.R.V.I.S.${X} ${D}│${X} ${C}${model:-online}${X}"
+[[ -n $style && $style != "QARVIS" ]] && line1+=" ${D}(${style})${X}"
 line1+=" ${D}│${X} ${G}⌁ ${project}${X}"
 [[ -n $branch ]] && line1+="${D}@${X}${C}${branch}${X}"
 

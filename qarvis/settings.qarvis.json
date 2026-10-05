@@ -1,13 +1,13 @@
 {
-  "outputStyle": "JARVIS",
+  "outputStyle": "QARVIS",
   "statusLine": {
     "type": "command",
-    "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline/jarvis-hud.sh\"",
+    "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline/qarvis-hud.sh\"",
     "padding": 1,
     "refreshInterval": 2
   },
   "companyAnnouncements": [
-    "J.A.R.V.I.S. online. All systems nominal — what are we building today, Santino?",
+    "Q.A.R.V.I.S. online. All systems nominal — what are we building today, Santino?",
     "Welcome back, Santino. The board is loaded and the coffee, regrettably, is still your department.",
     "Arc reactor at full capacity. Gmail, Zoho, Read.ai and Drive standing by."
   ],
@@ -24,11 +24,11 @@
   "spinnerTipsOverride": {
     "excludeDefault": true,
     "tips": [
-      "J.A.R.V.I.S.: Draft first, send later. I stage every email in Gmail for your approval.",
-      "J.A.R.V.I.S.: Ask me to brief you before any engagement: \"brief me on tomorrow's Truist call\".",
-      "J.A.R.V.I.S.: Press Esc to interrupt me. I won't take it personally.",
-      "J.A.R.V.I.S.: /output-style switches me back to standard mode if the theatrics wear thin.",
-      "J.A.R.V.I.S.: Say \"turn that into a skill\" and I'll remember the workflow for next time."
+      "Q.A.R.V.I.S.: Draft first, send later. I stage every email in Gmail for your approval.",
+      "Q.A.R.V.I.S.: Ask me to brief you before any engagement: \"brief me on tomorrow's Truist call\".",
+      "Q.A.R.V.I.S.: Press Esc to interrupt me. I won't take it personally.",
+      "Q.A.R.V.I.S.: /output-style switches me back to standard mode if the theatrics wear thin.",
+      "Q.A.R.V.I.S.: Say \"turn that into a skill\" and I'll remember the workflow for next time."
     ]
   }
 }
