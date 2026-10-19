@@ -1,0 +1,940 @@
+<title>Qarvis Qanvas Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: Qanvas trading-desktop skin — app bar on top, KPI strip, three docked panel columns, Quod IQ command bar with a service status bar pinned to the bottom. Single dark look matched to the Qanvas UI. */
+:root {
+  --bg: #020617;
+  --panel: #131827;
+  --raise: #1b2132;
+  --head: #0f1422;
+  --line: #242834;
+  --line-soft: #1c2232;
+  --orange: #f97316;
+  --orange-hi: #fb923c;
+  --orange-soft: rgba(249, 115, 22, 0.16);
+  --blue: #60a5fa;
+  --blue-soft: rgba(96, 165, 250, 0.14);
+  --green: #22c55e;
+  --green-soft: rgba(34, 197, 94, 0.14);
+  --red: #ef4444;
+  --red-soft: rgba(239, 68, 68, 0.16);
+  --fg: #e5e7eb;
+  --dim: #9ca3af;
+  --faint: #6b7280;
+  --ui: "Open Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--ui); font-size: 13px; line-height: 1.45; min-height: 100%; padding-inline: 12px; padding-block: 0 150px; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--orange); outline-offset: 1px; }
+
+/* ---------- App bar ---------- */
+.rail { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-inline: -12px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+#reactor { display: none; }
+.logo { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.logo .mark { width: 24px; height: 24px; border-radius: 5px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+.ident { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.ident h1 { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: .08em; color: var(--fg); }
+.ident h1 small { font-weight: 600; letter-spacing: .02em; color: var(--dim); font-size: 11px; }
+.badge { font-size: 11px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; color: var(--dim); background: var(--head); white-space: nowrap; }
+.ident .greet { font-size: 12px; color: var(--dim); }
+.ident .greet b { color: var(--fg); font-weight: 600; }
+.rail-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.clock { display: flex; align-items: baseline; gap: 8px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--head); }
+.clock .t { font-family: var(--mono); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.clock .d { font-size: 11px; color: var(--dim); }
+
+/* ---------- KPI strip ---------- */
+.readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-block: 10px; }
+.ro { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; border-top: 2px solid var(--accent, var(--orange)); }
+.ro .k { font-size: 11px; font-weight: 600; color: var(--dim); }
+.ro .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); margin-top: 2px; }
+.ro .s { font-size: 11px; color: var(--faint); margin-top: 1px; }
+.ro.gold { --accent: var(--green); }
+.ro.hot { --accent: var(--red); }
+.ro.ok { --accent: var(--blue); }
+
+/* ---------- Docked panels ---------- */
+.deck { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr) minmax(0, 1.25fr); gap: 8px; align-items: start; }
+.col { display: grid; gap: 8px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; min-width: 0; overflow: hidden; }
+.ph { display: flex; align-items: center; gap: 10px; padding: 0 10px; min-height: 34px; background: var(--head); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.ph h2 { margin: 0; font-size: 12px; font-weight: 700; color: var(--fg); padding: 9px 2px 7px; border-bottom: 2px solid var(--orange); }
+.ph .src { font-size: 11px; color: var(--faint); }
+.ph .stamp { margin-left: auto; font-size: 11px; color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pb { padding: 8px 10px 10px; }
+.msg { font-size: 12px; color: var(--dim); padding: 6px 0; }
+.msg.err { color: var(--red); }
+.msg.err b { color: var(--fg); font-weight: 600; }
+.scan { height: 2px; background: linear-gradient(90deg, transparent, var(--orange), transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: sweep 1.2s linear infinite; margin: 8px 0; }
+
+/* ---------- Lists ---------- */
+.day-h { font-size: 11px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 4px 0 6px; }
+.day-h:not(:first-child) { margin-top: 12px; }
+.evt { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.evt:first-of-type { border-top: 0; }
+.evt .tm { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.evt .ti { font-weight: 600; overflow-wrap: anywhere; }
+.evt .ti a { color: var(--fg); }
+.evt .meta { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; align-items: center; }
+.evt.past { opacity: .45; }
+.evt.now { background: rgba(249, 115, 22, .07); margin-inline: -10px; padding-inline: 10px; box-shadow: inset 2px 0 0 var(--orange); }
+.evt.now .tm { color: var(--orange-hi); }
+.tminus { font-size: 11px; font-weight: 700; color: var(--orange-hi); }
+.chip { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 3px; color: var(--blue); background: var(--blue-soft); white-space: nowrap; text-transform: uppercase; letter-spacing: .02em; }
+.chip.gold { color: var(--orange-hi); background: var(--orange-soft); }
+.chip.hot { color: #fff; background: var(--red); }
+.chip.rate { letter-spacing: .04em; }
+.chip.dim { color: var(--dim); background: #2a2f3c; }
+.task { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; align-items: start; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.tgroup .task:first-of-type { border-top: 0; }
+.task .box { width: 13px; height: 13px; margin-top: 3px; border: 1.5px solid var(--faint); border-radius: 3px; }
+.task.now .box { border-color: var(--orange); background: var(--orange); }
+.task.past { opacity: .5; }
+.task .ts { font-weight: 600; overflow-wrap: anywhere; }
+.task .ts a { color: var(--fg); }
+.task .tmeta { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; align-items: center; }
+.tgroup + .tgroup { margin-top: 10px; }
+
+/* ---------- Board grid ---------- */
+.tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+.tab { font-size: 11px; font-weight: 600; padding: 3px 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); color: var(--dim); cursor: pointer; }
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] { color: #fff; background: var(--orange); border-color: var(--orange); }
+.tab .n { opacity: .8; margin-left: 4px; }
+.board-wrap { overflow-x: auto; padding: 0; }
+.board-wrap > .msg { padding: 10px; }
+.board-wrap > .scan { margin: 10px; }
+table.board { width: 100%; border-collapse: collapse; min-width: 640px; font-variant-numeric: tabular-nums; }
+.board th { font-size: 11px; font-weight: 600; color: var(--dim); text-align: left; padding: 7px 10px; background: var(--head); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.board td { padding: 7px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.board tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .015); }
+.board tbody tr:hover td { background: var(--raise); }
+.board .acct { font-weight: 700; overflow-wrap: anywhere; }
+.board .dn { font-size: 12px; color: var(--dim); overflow-wrap: anywhere; }
+.board .amt { text-align: right; white-space: nowrap; font-weight: 600; }
+.board th.r { text-align: right; }
+.stage { display: grid; gap: 4px; min-width: 88px; }
+.stage .bars { display: flex; gap: 2px; }
+.stage .bars i { width: 14px; height: 4px; border-radius: 1px; background: #2a2f3c; }
+.stage .bars i.on { background: var(--orange); }
+.stage.neg .bars i.on { background: var(--green); }
+.stage .lbl { font-size: 11px; color: var(--dim); }
+.next { font-size: 12.5px; overflow-wrap: anywhere; }
+.next .when { font-size: 11px; font-weight: 700; color: var(--dim); display: block; margin-bottom: 1px; }
+.next .when.late { color: var(--red); }
+.next .when.soon { color: var(--orange-hi); }
+.flags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+.rowbtn { font-size: 11px; font-weight: 600; border: 1px solid var(--line); border-radius: 3px; background: var(--raise); color: var(--fg); padding: 3px 9px; cursor: pointer; white-space: nowrap; display: inline-block; }
+.rowbtn:hover { border-color: var(--faint); text-decoration: none; }
+.rowbtn.gold { background: var(--orange); border-color: var(--orange); color: #fff; }
+.rowbtn.gold:hover { background: var(--orange-hi); }
+.rowbtn:disabled { opacity: .45; cursor: default; }
+
+/* ---------- Follow-ups + inbox ---------- */
+.fu { padding: 8px 0 10px; border-top: 1px solid var(--line-soft); }
+.fu:first-child { border-top: 0; padding-top: 2px; }
+.fu .top { display: flex; gap: 8px; align-items: baseline; }
+.fu .ti { font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
+.fu .ago { margin-left: auto; font-size: 11px; color: var(--faint); white-space: nowrap; }
+.fu ul { margin: 5px 0 8px; padding-left: 16px; font-size: 12.5px; }
+.fu li { margin: 2px 0; }
+.fu li::marker { color: var(--orange); }
+.fu .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.draft { margin-top: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--head); padding: 10px; display: grid; gap: 8px; }
+.draft .lbl { font-size: 11px; font-weight: 700; color: var(--orange-hi); }
+.draft .to { font-size: 11.5px; color: var(--dim); overflow-wrap: anywhere; }
+.draft input, .draft textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 3px; font: 12.5px/1.5 var(--ui); padding: 7px 8px; }
+.draft textarea { min-height: 180px; resize: vertical; }
+.draft .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.draft .note { font-size: 11.5px; color: var(--dim); }
+.draft .note.ok { color: var(--green); }
+.draft .note.err { color: var(--red); }
+.mail { display: grid; gap: 1px; padding: 7px 0; border-top: 1px solid var(--line-soft); }
+.mail:first-child { border-top: 0; padding-top: 2px; }
+.mail .who { display: flex; gap: 8px; font-size: 11px; color: var(--faint); }
+.mail .who span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; color: var(--dim); }
+.mail .who span:last-child { margin-left: auto; white-space: nowrap; }
+.mail .sub { font-weight: 600; overflow-wrap: anywhere; }
+.mail .sub a { color: var(--fg); }
+.mail .snip { font-size: 12px; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- Quod IQ bar + status bar ---------- */
+.console { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--bg); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.answer { max-width: 1100px; margin: 8px auto; max-height: 46vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 -10px 30px rgba(0,0,0,.5); }
+.answer .ah { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--orange-hi); margin-bottom: 8px; white-space: normal; }
+.answer .ah button { margin-left: auto; }
+.answer .ah button + button { margin-left: 0; }
+.answer .q { font-size: 12px; color: var(--dim); margin-bottom: 6px; }
+.cmd { max-width: 1100px; margin: 0 auto; display: grid; gap: 6px; padding: 8px 12px; }
+.quick { display: flex; gap: 4px; flex-wrap: wrap; }
+.quick button { font-size: 11px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); color: var(--dim); cursor: pointer; }
+.quick button:hover { color: var(--fg); border-color: var(--faint); }
+form.bar { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); padding: 4px 4px 4px 10px; }
+form.bar label { font-size: 12px; font-weight: 700; color: var(--orange-hi); white-space: nowrap; }
+form.bar input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--fg); font: 13px var(--ui); padding: 6px 0; outline: none; }
+form.bar button { font-size: 12px; font-weight: 700; background: var(--orange); color: #fff; border: 0; border-radius: 3px; padding: 7px 14px; cursor: pointer; }
+form.bar button:disabled { opacity: .5; cursor: default; }
+.statusbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 5px 14px; background: var(--panel); border-top: 1px solid var(--line); font-size: 11px; color: var(--dim); }
+.statusbar .user { color: var(--fg); font-weight: 600; }
+.systems { display: flex; gap: 14px; flex-wrap: wrap; }
+.sys { display: inline-flex; align-items: center; gap: 6px; }
+.sys::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.sys[data-state="online"]::before { background: var(--green); }
+.sys[data-state="linking"]::before { background: var(--orange); animation: blink 1s steps(2) infinite; }
+.sys[data-state="offline"] { color: var(--red); }
+.sys[data-state="offline"]::before { background: var(--red); }
+.statusbar .ver { margin-left: auto; color: var(--faint); }
+
+@keyframes blink { 50% { opacity: .25; } }
+@keyframes sweep { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+@media (max-width: 1180px) {
+  .deck { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .col.board-col { grid-column: 1 / -1; order: -1; }
+}
+@media (max-width: 760px) {
+  .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .deck { grid-template-columns: minmax(0, 1fr); }
+  .rail-right { margin-left: 0; }
+  .ident .greet { flex-basis: 100%; }
+  form.bar label, .statusbar .ver { display: none; }
+}
+
+.tadd { display: grid; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.tadd .row { display: flex; gap: 6px; align-items: stretch; }
+.tadd .row { flex-wrap: wrap; }
+.tadd textarea { flex: 1 1 100%; min-height: 54px; }
+.tadd select { flex: 1 1 auto; height: 30px; }
+.tadd button { height: 30px; flex: 0 0 auto; }
+.tadd textarea { flex: 1; min-width: 0; min-height: 34px; max-height: 140px; resize: vertical; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 3px; font: 12.5px/1.4 var(--ui); padding: 7px 8px; }
+.tadd textarea:focus { border-color: var(--orange); outline: none; }
+.tadd select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 3px; font: 11.5px var(--ui); padding: 0 6px; }
+.tadd button { font-size: 12px; font-weight: 700; background: var(--orange); color: #fff; border: 0; border-radius: 3px; padding: 0 12px; cursor: pointer; }
+.tadd button:disabled { opacity: .5; cursor: default; }
+.tadd .hint { font-size: 11px; color: var(--faint); }
+.tadd .hint.ok { color: var(--green); } .tadd .hint.err { color: var(--red); }
+.task .chk { width: 14px; height: 14px; margin-top: 2px; border: 1.5px solid var(--faint); border-radius: 3px; background: transparent; cursor: pointer; padding: 0; display: grid; place-items: center; color: #fff; font-size: 10px; line-height: 1; }
+.task .chk:hover { border-color: var(--orange); }
+.task .chk[aria-checked="true"] { background: var(--green); border-color: var(--green); }
+.task.mine { grid-template-columns: 16px minmax(0, 1fr) auto; }
+.task.done .ts { text-decoration: line-through; color: var(--dim); }
+.task .del { background: transparent; border: 0; color: var(--faint); cursor: pointer; font-size: 13px; padding: 0 2px; }
+.task .del:hover, .task .del.arm { color: var(--red); }
+.task .del.arm { font-size: 11px; font-weight: 700; }
+</style>
+
+<header class="rail">
+  <canvas id="reactor" width="128" height="128" aria-hidden="true"></canvas>
+  <div class="ident">
+    <div class="logo"><span class="mark" aria-hidden="true">Q</span><h1>QARVIS <small>by QUOD</small></h1></div>
+    <span class="badge">Sales · US</span>
+    <div class="greet" id="greet">Initializing…</div>
+  </div>
+  <div class="rail-right">
+    <div class="clock"><div class="t" id="clock">--:--:--</div><div class="d" id="date">—</div></div>
+  </div>
+</header>
+
+<section class="readouts" aria-label="Pipeline readouts">
+  <div class="ro"><div class="k">Hot pipeline</div><div class="v" id="k-pipe">—</div><div class="s" id="k-pipe-s">Critical · Very Hot · Hot</div></div>
+  <div class="ro gold"><div class="k">In negotiation</div><div class="v" id="k-neg">—</div><div class="s" id="k-neg-s">Stage 5</div></div>
+  <div class="ro hot"><div class="k">Needs attention</div><div class="v" id="k-att">—</div><div class="s" id="k-att-s">Overdue or missing next step</div></div>
+  <div class="ro ok"><div class="k">Engagements today</div><div class="v" id="k-eng">—</div><div class="s" id="k-eng-s">External meetings</div></div>
+</section>
+
+<main class="deck">
+  <div class="col">
+    <section class="panel" aria-labelledby="h-tasks">
+      <div class="ph"><h2 id="h-tasks">Tasks</h2><span class="src">Qarvis · Google</span></div>
+      <form class="tadd" id="task-add" autocomplete="off">
+        <div class="row">
+          <textarea id="task-in" rows="1" placeholder="e.g. STA: follow up with Brian at Marex on Quazar Thursday, send Aaron the options deck" aria-label="New task"></textarea>
+          <select id="task-due" aria-label="Due date"><option value="auto">Auto date</option><option value="0">Today</option><option value="1">Tomorrow</option><option value="7">In a week</option><option value="none">No date</option></select>
+          <button type="submit" id="task-add-btn">Add</button>
+        </div>
+        <div class="hint" id="task-hint">Enter to add · Shift+Enter for a new line · one task per line or a whole paragraph</div>
+      </form>
+      <div class="pb" id="tasks"><div class="scan"></div><div class="msg">Loading today's tasks…</div></div>
+    </section>
+    <section class="panel" aria-labelledby="h-eng">
+      <div class="ph"><h2 id="h-eng">Engagements</h2><span class="src">Calendar</span><span class="stamp" id="st-cal"></span></div>
+      <div class="pb" id="eng"><div class="scan"></div><div class="msg">Scanning calendar…</div></div>
+    </section>
+  </div>
+
+  <div class="col board-col">
+    <section class="panel" aria-labelledby="h-board">
+      <div class="ph">
+        <h2 id="h-board">The Board</h2><span class="src">Hot · Very Hot · Critical</span>
+        <div class="tabs" role="tablist" id="tabs">
+          <button class="tab" role="tab" data-v="attention" aria-selected="true">Attention<span class="n" id="n-attention"></span></button>
+          <button class="tab" role="tab" data-v="week" aria-selected="false">This week<span class="n" id="n-week"></span></button>
+          <button class="tab" role="tab" data-v="neg" aria-selected="false">Negotiation<span class="n" id="n-neg"></span></button>
+          <button class="tab" role="tab" data-v="all" aria-selected="false">All<span class="n" id="n-all"></span></button>
+        </div>
+        <span class="stamp" id="st-zoho"></span>
+      </div>
+      <div class="pb board-wrap" id="board"><div class="scan"></div><div class="msg">Pulling your deals from Zoho…</div></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="panel" aria-labelledby="h-fu">
+      <div class="ph"><h2 id="h-fu">Follow-ups owed</h2><span class="src">Read.ai</span><span class="stamp" id="st-read"></span></div>
+      <div class="pb" id="fu"><div class="scan"></div><div class="msg">Reviewing recent meetings…</div></div>
+    </section>
+    <section class="panel" aria-labelledby="h-inbox">
+      <div class="ph"><h2 id="h-inbox">Inbox · unread</h2><span class="src">Gmail</span><span class="stamp" id="st-gmail"></span></div>
+      <div class="pb" id="inbox"><div class="scan"></div><div class="msg">Sweeping inbox…</div></div>
+    </section>
+  </div>
+</main>
+
+<div class="console">
+  <div class="answer" id="answer" hidden>
+    <div class="ah"><span id="ans-state">Response</span><button class="rowbtn" id="ans-stop" type="button" hidden>Stop</button><button class="rowbtn" id="ans-close" type="button">Close</button></div>
+    <div class="q" id="ans-q"></div>
+    <div id="ans-body"></div>
+  </div>
+  <div class="cmd">
+    <div class="quick" id="quick">
+      <button type="button">What should I focus on today?</button>
+      <button type="button">What's on my task list, and what's overdue?</button>
+      <button type="button">Which deals are slipping, and what should I do about each?</button>
+      <button type="button">Prep me for my next external meeting.</button>
+      <button type="button">Which follow-ups have I not sent yet?</button>
+    </div>
+    <form class="bar" id="ask-form" autocomplete="off">
+      <label for="ask">Quod IQ</label>
+      <input id="ask" name="ask" placeholder="Ask about your pipeline, meetings or inbox…">
+      <button type="submit" id="ask-btn">Ask</button>
+    </form>
+  </div>
+  <div class="statusbar">
+    <span class="user">santino.lopez</span>
+    <div class="systems" aria-label="Connected systems">
+      <span class="sys" id="sys-zoho" data-state="linking">Zoho CRM</span>
+      <span class="sys" id="sys-cal" data-state="linking">Calendar</span>
+      <span class="sys" id="sys-gmail" data-state="linking">Gmail</span>
+      <span class="sys" id="sys-read" data-state="linking">Read.ai</span>
+      <span class="sys" id="sys-ai" data-state="linking">AI Service</span>
+    </div>
+    <span class="ver">Qarvis · Qanvas edition</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const ME = { name: "Santino", email: "santino.lopez@quodfinancial.com", domain: "quodfinancial.com" };
+  const TZ = "America/New_York";
+  const $ = (id) => document.getElementById(id);
+  const use = (n) => (window.claude && window.claude.use ? window.claude.use(n) : Promise.resolve(null));
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const state = { mytasks: null, deals: null, events: null, meetings: null, mail: null, tab: "attention", drafts: {} };
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Arc reactor ---------- */
+  const rc = $("reactor"), rx = rc.getContext("2d");
+  function drawReactor(t) {
+    const c = 64; rx.clearRect(0, 0, 128, 128);
+    const pulse = reduced ? 1 : 0.85 + 0.15 * Math.sin(t / 420);
+    const g = rx.createRadialGradient(c, c, 2, c, c, 30);
+    g.addColorStop(0, `rgba(230,255,255,${pulse})`); g.addColorStop(0.35, `rgba(79,227,255,${0.8 * pulse})`); g.addColorStop(1, "rgba(79,227,255,0)");
+    rx.fillStyle = g; rx.beginPath(); rx.arc(c, c, 30, 0, Math.PI * 2); rx.fill();
+    rx.lineWidth = 2; rx.strokeStyle = "rgba(79,227,255,.9)";
+    rx.beginPath(); rx.arc(c, c, 16, 0, Math.PI * 2); rx.stroke();
+    const rot = reduced ? 0 : t / 2200;
+    for (let i = 0; i < 10; i++) {
+      const a = rot + (i / 10) * Math.PI * 2;
+      rx.strokeStyle = "rgba(79,227,255,.75)"; rx.lineWidth = 5;
+      rx.beginPath(); rx.arc(c, c, 38, a, a + 0.42); rx.stroke();
+    }
+    rx.lineWidth = 1.5; rx.strokeStyle = "rgba(79,227,255,.35)";
+    rx.beginPath(); rx.arc(c, c, 48, 0, Math.PI * 2); rx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const a = -rot * 1.6 + (i / 3) * Math.PI * 2;
+      rx.strokeStyle = "rgba(255,181,71,.85)"; rx.lineWidth = 3;
+      rx.beginPath(); rx.arc(c, c, 56, a, a + 0.7); rx.stroke();
+    }
+    if (!reduced) requestAnimationFrame(drawReactor);
+  }
+  if (getComputedStyle(rc).display !== "none") requestAnimationFrame(drawReactor);
+
+  /* ---------- Clock + greeting ---------- */
+  const fmtTime = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: TZ });
+  const fmtDate = new Intl.DateTimeFormat("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: TZ });
+  const fmtHM = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: TZ });
+  const hourNY = () => Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: TZ }).format(new Date()));
+  function tick() {
+    const now = new Date();
+    $("clock").textContent = fmtTime.format(now);
+    $("date").textContent = fmtDate.format(now).toUpperCase().replace(/,/g, "");
+    renderGreeting();
+    if (state.events) { markNow(); if (now.getSeconds() === 0) renderTasks(); }
+  }
+  function renderGreeting() {
+    const h = hourNY();
+    const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    const bits = [];
+    if (state.deals) { const n = state.deals.filter((d) => d.attention).length; if (n) bits.push(`${n} deals need attention`); }
+    { const n = (state.events || []).filter((e) => e.isTask && e.day === 0).length + (state.mytasks || []).filter((t) => !t.done && t.due && t.due <= ymd(today0)).length; if (n) bits.push(`${n} task${n > 1 ? "s" : ""} due`); }
+    if (state.meetings) { const n = state.meetings.length; if (n) bits.push(`${n} follow-ups pending`); }
+    $("greet").innerHTML = `${part}, <b>${esc(ME.name)}</b>. ${bits.length ? esc(bits.join(" · ")) + "." : "All systems nominal."}`;
+  }
+  setInterval(tick, 1000); tick();
+
+  /* ---------- Helpers ---------- */
+  const DAY = 86400000;
+  const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  const today0 = startOfDay(new Date());
+  const money = (n) => {
+    if (!n) return "$0";
+    if (n >= 1e6) return "$" + (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
+    if (n >= 1e3) return "$" + Math.round(n / 1e3) + "K";
+    return "$" + n;
+  };
+  const ago = (ms) => {
+    const d = Math.round((Date.now() - ms) / DAY);
+    if (d <= 0) return "today"; if (d === 1) return "yesterday"; return d + "d ago";
+  };
+  const shortDate = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const isoLocal = (d) => {
+    const off = -d.getTimezoneOffset(), sign = off >= 0 ? "+" : "-", a = Math.abs(off);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00${sign}${p(Math.floor(a / 60))}:${p(a % 60)}`;
+  };
+  function setSys(id, s) { const el = $(id); if (el) el.dataset.state = s; }
+  function stamp(id, result) {
+    const at = result?.cache?.storedAt ?? Date.now();
+    $(id).textContent = "SYNC " + fmtHM.format(new Date(at));
+  }
+  function errHTML(server, e) {
+    const code = e?.code || "upstream_error";
+    const map = {
+      needs_reauth: `<b>${server}</b> needs reconnecting. Reconnect it in claude.ai Settings → Connectors, then reload.`,
+      server_not_connected: `<b>${server}</b> isn't connected for you. Add it in claude.ai Settings → Connectors.`,
+      selection_required: `Choose which <b>${server}</b> connection to use in the prompt above, then reload.`,
+      not_in_manifest: `<b>${server}</b> access is turned off for this page. Turn it on from the page's Permissions menu.`,
+      blocked_by_policy: `Your organization blocks this <b>${server}</b> action.`,
+      approval_required: `This <b>${server}</b> action needs approval from your admin.`,
+      server_unavailable: `<b>${server}</b> isn't responding right now. It will retry on the next sync.`,
+      tool_error: `<b>${server}</b> reported an error: ${esc(e?.message || "unknown")}`,
+      not_granted: `Live connectors aren't enabled in this view.`,
+      capability_disabled: `Live connectors aren't available in this view.`,
+    };
+    return `<div class="msg err">▸ ${map[code] || `<b>${server}</b> link failed (${esc(code)}). Reload to try again.`}</div>`;
+  }
+  const isDenial = (c) => ["needs_reauth", "server_not_connected", "blocked_by_policy", "approval_required", "not_in_manifest", "not_granted", "capability_disabled", "selection_required"].includes(c);
+
+  /* ---------- Board (Zoho) ---------- */
+  const MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  function parseNext(raw) {
+    if (!raw) return { date: null, text: "" };
+    const m = String(raw).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})\s*-\s*(.*)$/s);
+    if (m) return { date: new Date(+m[3], MON[m[2].toLowerCase()] ?? 0, +m[1]), text: m[4].trim() };
+    return { date: null, text: String(raw).replace(/^null\s*-\s*/i, "").trim() };
+  }
+  function shapeDeal(r) {
+    const next = parseNext(r.Next_Step);
+    const close = r.Closing_Date ? new Date(r.Closing_Date + "T00:00:00") : null;
+    const stageNum = parseInt(r.Stage, 10) || 0;
+    const flags = [];
+    if (!next.text) flags.push({ c: "hot", t: "No next step" });
+    else if (!next.date) flags.push({ c: "gold", t: "Next step undated" });
+    else if (next.date < today0) flags.push({ c: "hot", t: `Next step ${Math.round((today0 - next.date) / DAY)}d overdue` });
+    if (close && close < today0) flags.push({ c: "hot", t: "Close date passed" });
+    if (/placeholder/i.test(next.text)) flags.push({ c: "gold", t: "Placeholder" });
+    const dueWeek = next.date && next.date >= today0 && next.date < new Date(+today0 + 7 * DAY);
+    const acct = (r["Account_Name.Account_Name"] || "").replace(/\s*\[[A-Z]{2}\]\s*$/, "");
+    const region = ((r["Account_Name.Account_Name"] || "").match(/\[([A-Z]{2})\]\s*$/) || [])[1] || "";
+    const attention = flags.some((f) => f.c === "hot");
+    const ratingRaw = String(r.Rating || "");
+    const rating = /critical/i.test(ratingRaw) ? { lvl: 3, t: "Critical", c: "hot" } : /very hot/i.test(ratingRaw) ? { lvl: 2, t: "Very Hot", c: "gold" } : { lvl: 1, t: "Hot", c: "" };
+    const score = rating.lvl * 1.2 + (attention ? 2 : 0) + (stageNum >= 5 ? 1.5 : stageNum >= 3 ? 0.6 : 0) + Math.log10((r.Amount || 1e4)) / 3;
+    return { id: r.id, name: r.Deal_Name, rating, acct, region, stage: r.Stage || "", stageNum, amount: r.Amount || 0, next, close, flags, attention, dueWeek, score };
+  }
+  function renderBoard() {
+    const el = $("board"), deals = state.deals;
+    if (!deals) return;
+    const sets = {
+      attention: deals.filter((d) => d.attention),
+      week: deals.filter((d) => d.dueWeek),
+      neg: deals.filter((d) => d.stageNum >= 5),
+      all: deals,
+    };
+    for (const k in sets) $("n-" + k).textContent = sets[k].length;
+    const rows = [...sets[state.tab]].sort((a, b) => b.score - a.score || b.amount - a.amount);
+    if (!rows.length) {
+      el.innerHTML = `<div class="msg">▸ Nothing here. ${state.tab === "attention" ? "Every deal has a current next step." : "Try another view."}</div>`;
+      return;
+    }
+    const weekEnd = new Date(+today0 + 7 * DAY);
+    el.innerHTML = `<table class="board"><thead><tr><th>Account</th><th>Stage</th><th class="r">Value</th><th>Next step</th><th></th></tr></thead><tbody>${rows.map((d) => {
+      const bars = [1, 2, 3, 4, 5].map((i) => `<i class="${i <= d.stageNum ? "on" : ""}"></i>`).join("");
+      const whenCls = d.next.date ? (d.next.date < today0 ? "late" : d.next.date < weekEnd ? "soon" : "") : "late";
+      const when = d.next.date ? shortDate(d.next.date) : d.next.text ? "Undated" : "—";
+      return `<tr>
+        <td><div class="acct">${esc(d.acct || "—")}${d.region ? ` <span class="chip dim">${esc(d.region)}</span>` : ""}</div><div class="dn">${esc(d.name)}</div><div class="flags"><span class="chip rate ${d.rating.c}">${d.rating.lvl === 3 ? "▲▲▲" : d.rating.lvl === 2 ? "▲▲" : "▲"} ${esc(d.rating.t)}</span></div></td>
+        <td><div class="stage ${d.stageNum >= 5 ? "neg" : ""}"><div class="bars">${bars}</div><div class="lbl">${esc(d.stage.replace(/^\d+\s*/, ""))}</div></div></td>
+        <td class="amt">${money(d.amount)}</td>
+        <td><div class="next"><span class="when ${whenCls}">${esc(when)}</span>${esc(d.next.text || "No next step logged")}</div>${d.flags.length ? `<div class="flags">${d.flags.map((f) => `<span class="chip ${f.c}">${esc(f.t)}</span>`).join("")}</div>` : ""}</td>
+        <td><button class="rowbtn" type="button" data-brief="${esc(d.id)}">Brief</button></td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+  }
+  function renderKPIs() {
+    const d = state.deals;
+    if (d) {
+      const pipe = d.reduce((s, x) => s + x.amount, 0);
+      const neg = d.filter((x) => x.stageNum >= 5);
+      const att = d.filter((x) => x.attention);
+      $("k-pipe").textContent = money(pipe); const rc = (l) => d.filter((x) => x.rating.lvl === l).length;
+      $("k-pipe-s").textContent = `${d.length} deals · ${rc(3)} critical · ${rc(2)} very hot · ${rc(1)} hot`;
+      $("k-neg").textContent = money(neg.reduce((s, x) => s + x.amount, 0)); $("k-neg-s").textContent = `${neg.length} deals at stage 5`;
+      $("k-att").textContent = att.length; $("k-att-s").textContent = `${money(att.reduce((s, x) => s + x.amount, 0))} at risk of drifting`;
+    }
+    if (state.events) {
+      const t = state.events.filter((e) => e.day === 0 && e.external && !e.isTask);
+      $("k-eng").textContent = t.length;
+      const next = state.events.find((e) => e.external && !e.isTask && e.start > new Date());
+      $("k-eng-s").textContent = next ? `Next: ${next.title.slice(0, 34)}` : "No more external meetings today";
+    }
+    renderGreeting();
+  }
+  $("tabs").addEventListener("click", (e) => {
+    const b = e.target.closest(".tab"); if (!b) return;
+    state.tab = b.dataset.v;
+    for (const t of document.querySelectorAll(".tab")) t.setAttribute("aria-selected", String(t === b));
+    renderBoard();
+  });
+  $("board").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-brief]"); if (!b) return;
+    const d = state.deals.find((x) => x.id === b.dataset.brief); if (!d) return;
+    ask(`Brief me on the ${d.acct} "${d.name}" deal: where it stands, what looks risky, and the single best next move this week.`);
+  });
+
+  /* ---------- Engagements (Calendar) ---------- */
+  function shapeEvents(payload) {
+    const items = payload?.events || [];
+    return items.filter((e) => e.status !== "cancelled" && e.summary).map((e) => {
+      const allDay = !e.start?.dateTime;
+      const start = new Date(e.start?.dateTime || (e.start?.date + "T00:00:00"));
+      const end = new Date(e.end?.dateTime || (e.end?.date + "T00:00:00"));
+      const ext = (e.attendees || []).map((a) => a.email || "").filter((m) => m && !m.endsWith("@" + ME.domain) && !/resource\.calendar|group\.calendar/.test(m));
+      const domains = [...new Set(ext.map((m) => m.split("@")[1]))];
+      const day = Math.floor((startOfDay(start) - today0) / DAY);
+      const taskUrl = ((e.description || "").match(/https:\/\/tasks\.google\.com\/\S+/) || [])[0] || "";
+      const others = (e.attendees || []).filter((a) => !a.self && (a.email || "").toLowerCase() !== ME.email);
+      const reminder = allDay && !others.length && e.transparency === "transparent" && (e.creator?.self || e.creator?.email === ME.email);
+      const isTask = !!taskUrl || reminder;
+      return { id: e.id, title: e.summary, start, end, allDay, external: domains.length > 0, domains, day, link: e.htmlLink, attendees: (e.attendees || []).length, isTask, taskUrl, scheduled: !allDay };
+    }).filter((e) => e.day >= 0 && e.day <= 1).sort((a, b) => a.start - b.start);
+  }
+  function renderEvents() {
+    renderTasks();
+    const el = $("eng"), ev = state.events && state.events.filter((e) => !e.isTask);
+    if (!ev) return;
+    if (!ev.length) { el.innerHTML = `<div class="msg">▸ Clear skies. Nothing on the calendar today or tomorrow.</div>`; return; }
+    let html = "";
+    for (const day of [0, 1]) {
+      const list = ev.filter((e) => e.day === day);
+      html += `<div class="day-h">${day === 0 ? "Today" : "Tomorrow"} · ${list.length}</div>`;
+      if (!list.length) html += `<div class="msg">Nothing scheduled.</div>`;
+      for (const e of list) {
+        html += `<div class="evt" data-start="${+e.start}" data-end="${+e.end}" data-allday="${e.allDay}">
+          <div class="tm">${e.allDay ? "ALL" : fmtHM.format(e.start)}</div>
+          <div><div class="ti">${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.title)}</a>` : esc(e.title)}</div>
+          <div class="meta">${e.domains.slice(0, 3).map((d) => `<span class="chip gold">${esc(d)}</span>`).join("")}${!e.external && !e.allDay ? `<span class="chip dim">internal</span>` : ""}<span class="tminus"></span></div></div>
+        </div>`;
+      }
+    }
+    el.innerHTML = html;
+    markNow();
+  }
+  function markNow() {
+    const now = Date.now(); let flaggedNext = false;
+    for (const row of document.querySelectorAll("#eng .evt")) {
+      if (row.dataset.allday === "true") continue;
+      const s = +row.dataset.start, e = +row.dataset.end, tm = row.querySelector(".tminus");
+      row.classList.toggle("past", e < now);
+      const live = s <= now && now < e;
+      row.classList.toggle("now", live || (!flaggedNext && s > now));
+      if (live) tm.textContent = "▸ IN PROGRESS";
+      else if (!flaggedNext && s > now) {
+        flaggedNext = true;
+        const m = Math.round((s - now) / 60000);
+        tm.textContent = m < 60 ? `T-MINUS ${m} MIN` : m < 1440 ? `T-MINUS ${Math.floor(m / 60)}H ${m % 60}M` : "";
+      } else tm.textContent = "";
+    }
+  }
+
+  /* ---------- Tasks (Qarvis list + Google time-blocked tasks) ---------- */
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const fromYmd = (s) => (typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + "T00:00:00") : null);
+  const dayDiff = (d) => (d ? Math.round((startOfDay(d) - today0) / DAY) : null);
+  const delArm = {};
+  let taskDb = null;
+  function renderTasks() {
+    const el = $("tasks");
+    const mine = state.mytasks, gcal = state.events ? state.events.filter((e) => e.isTask) : null;
+    if (!mine && !gcal) return;
+    const now = Date.now(), todayStr = ymd(today0);
+    const items = [];
+    for (const t of mine || []) {
+      if (t.done && t.doneOn !== todayStr) continue;
+      const due = fromYmd(t.due), dd = dayDiff(due);
+      items.push({ kind: "mine", t, dd, sort: t.done ? 2 : 0 });
+    }
+    for (const g of gcal || []) items.push({ kind: "g", g, dd: g.day, sort: 1 });
+    const bucket = (it) => it.dd === null ? "nodate" : it.dd < 0 ? (it.kind === "mine" && it.t.done ? "today" : "overdue") : it.dd === 0 ? "today" : it.dd === 1 ? "tomorrow" : it.dd <= 7 ? "week" : "later";
+    const rowMine = (t, dd) => {
+      const when = dd === null ? "No date" : dd < 0 ? `${-dd}d overdue` : dd === 0 ? "Today" : dd === 1 ? "Tomorrow" : shortDate(fromYmd(t.due));
+      const wc = t.done ? "dim" : dd === null ? "dim" : dd < 0 ? "hot" : dd === 0 ? "gold" : "";
+      const armed = delArm[t.id];
+      return `<div class="task mine ${t.done ? "done" : ""}">
+        <button class="chk" type="button" role="checkbox" aria-checked="${t.done ? "true" : "false"}" aria-label="Mark ${esc(t.title)} ${t.done ? "not done" : "done"}" data-chk="${esc(t.id)}">${t.done ? "✓" : ""}</button>
+        <div><div class="ts">${esc(t.title)}</div>
+        <div class="tmeta"><span class="chip ${wc}">${esc(when)}</span>${t.account ? `<span class="chip gold">${esc(t.account)}</span>` : ""}${t.tag ? `<span class="chip dim">${esc(t.tag)}</span>` : ""}</div></div>
+        <button class="del ${armed ? "arm" : ""}" type="button" data-del="${esc(t.id)}" aria-label="Delete task">${armed ? "Delete?" : "✕"}</button>
+      </div>`;
+    };
+    const rowG = (t) => {
+      const live = t.scheduled && +t.start <= now && now < +t.end, past = t.scheduled && +t.end < now;
+      const when = t.scheduled ? `${fmtHM.format(t.start)}–${fmtHM.format(t.end)}` : "Any time";
+      const href = t.taskUrl || t.link;
+      return `<div class="task ${live ? "now" : ""} ${past ? "past" : ""}"><span class="box" aria-hidden="true"></span>
+        <div><div class="ts">${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(t.title)}</a>` : esc(t.title)}</div>
+        <div class="tmeta"><span class="chip ${live ? "gold" : t.scheduled ? "" : "dim"}">${esc(when)}</span>${live ? `<span class="tminus">▸ IN PROGRESS</span>` : ""}<span class="chip dim">${t.taskUrl ? "Google Tasks" : "Reminder"}</span></div></div>
+      </div>`;
+    };
+    const groups = [["overdue", "Overdue"], ["today", "Today"], ["tomorrow", "Tomorrow"], ["week", "This week"], ["later", "Later"], ["nodate", "No date"]];
+    let html = "";
+    for (const [k, label] of groups) {
+      const list = items.filter((it) => bucket(it) === k).sort((a, b) => a.sort - b.sort || (a.dd ?? 99) - (b.dd ?? 99));
+      if (!list.length && k !== "today") continue;
+      const open = list.filter((it) => !(it.kind === "mine" && it.t.done)).length;
+      html += `<div class="tgroup"><div class="day-h">${label} · ${open}</div>${list.length ? list.map((it) => it.kind === "mine" ? rowMine(it.t, it.dd) : rowG(it.g)).join("") : `<div class="msg">Nothing due today. Add one above.</div>`}</div>`;
+    }
+    el.innerHTML = html || `<div class="msg">No tasks yet. Add your first one above.</div>`;
+    renderGreeting();
+  }
+  function cleanTask(raw, dueOverride) {
+    const title = String(raw?.title || "").trim().slice(0, 300);
+    if (!title) return null;
+    let due = dueOverride !== undefined ? dueOverride : (fromYmd(raw?.due) ? raw.due : null);
+    const account = String(raw?.account || "").trim().slice(0, 80) || null;
+    const tag = String(raw?.tag || "").trim().slice(0, 30) || null;
+    return { title, due, account, tag, done: false, doneOn: null, createdAt: Date.now() };
+  }
+  async function saveTasks(list) {
+    if (!taskDb) throw { code: "not_granted" };
+    const out = [];
+    for (const t of list) { const ref = await taskDb.collection("tasks").add(t); out.push(ref.id); }
+    return out;
+  }
+  async function parseTasks(text) {
+    const sample = await use("sample");
+    if (!sample) return null;
+    const prompt = `Turn this note into to-do items for ${ME.name}, who does US sales at Quod Financial. Today is ${today0.toDateString()} (${ymd(today0)}).
+Split it into separate tasks when it lists several. For each: a short imperative title that keeps names and details, a due date as YYYY-MM-DD resolved from phrases like "Thursday", "next week" (= next Monday), "EOW" (= this Friday) or null if none given, the company if one is named (else null), and a short tag if an event or campaign is mentioned (for example "STA"), else null.
+Reply with only a JSON array: [{"title": string, "due": string|null, "account": string|null, "tag": string|null}]
+
+Note:
+${text.slice(0, 4000)}`;
+    try { const arr = await sample.json(prompt, { modelTier: "quick", cache: false }); return Array.isArray(arr) ? arr : null; }
+    catch { return null; }
+  }
+  function setHint(msg, cls) { const h = $("task-hint"); h.textContent = msg; h.className = "hint" + (cls ? " " + cls : ""); }
+  async function addFromInput() {
+    const box = $("task-in"), text = box.value.trim(); if (!text) return;
+    const sel = $("task-due").value;
+    const override = sel === "auto" ? undefined : sel === "none" ? null : ymd(new Date(+today0 + Number(sel) * DAY));
+    $("task-add-btn").disabled = true; setHint("Logging…");
+    let list = null;
+    const parsed = await parseTasks(text);
+    if (parsed) list = parsed.map((r) => cleanTask(r, override)).filter(Boolean);
+    if (!list || !list.length) {
+      const fallbackDue = override !== undefined ? override : ymd(today0);
+      list = text.split(/\n+/).map((l) => cleanTask({ title: l.replace(/^[-*•\d.)\s]+/, "") }, fallbackDue)).filter(Boolean);
+    }
+    try {
+      await saveTasks(list);
+      box.value = ""; setHint(`Logged ${list.length} task${list.length > 1 ? "s" : ""}.`, "ok");
+    } catch (e) {
+      setHint(e?.code === "quota_exceeded" ? "Task storage is full. Delete some old tasks." : e?.code === "not_granted" ? "Saving tasks isn't available in this view." : "Couldn't save. Try again.", "err");
+    } finally { $("task-add-btn").disabled = false; }
+  }
+  $("task-add").addEventListener("submit", (e) => { e.preventDefault(); addFromInput(); });
+  $("task-in").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addFromInput(); } });
+  $("tasks").addEventListener("click", async (e) => {
+    const c = e.target.closest("[data-chk]");
+    if (c && taskDb) {
+      const t = (state.mytasks || []).find((x) => x.id === c.dataset.chk); if (!t) return;
+      c.disabled = true;
+      try { await taskDb.doc("tasks/" + t.id).update({ done: !t.done, doneOn: t.done ? null : ymd(today0) }); }
+      catch { c.disabled = false; setHint("Couldn't update that task. Try again.", "err"); }
+      return;
+    }
+    const d = e.target.closest("[data-del]");
+    if (d && taskDb) {
+      const id = d.dataset.del;
+      if (!delArm[id]) { for (const k in delArm) delete delArm[k]; delArm[id] = true; renderTasks(); setTimeout(() => { if (delArm[id]) { delete delArm[id]; renderTasks(); } }, 4000); return; }
+      delete delArm[id];
+      try { await taskDb.doc("tasks/" + id).delete(); } catch { setHint("Couldn't delete that task.", "err"); }
+    }
+  });
+  async function bootTasks() {
+    taskDb = await use("db");
+    if (!taskDb) { $("task-in").disabled = true; $("task-add-btn").disabled = true; setHint("Saving tasks isn't available in this view."); renderTasks(); return; }
+    taskDb.collection("tasks").onSnapshot((snap) => {
+      state.mytasks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderTasks();
+    }, (err) => {
+      setHint(err?.code === "revoked" ? "Task list is no longer available here." : "Task list stopped syncing. Reload the page.", "err");
+    });
+  }
+  bootTasks();
+
+  /* ---------- Follow-ups (Read.ai) ---------- */
+  function shapeMeetings(payload) {
+    const list = payload?.data || [];
+    return list.filter((m) => {
+      const me = (m.participants || []).some((p) => (p.email || "").toLowerCase() === ME.email && p.attended);
+      const ext = (m.participants || []).some((p) => p.email && !p.email.endsWith("@" + ME.domain));
+      return me && ext && (m.action_items || []).length;
+    }).map((m) => {
+      const parts = m.participants || [];
+      const external = parts.filter((p) => p.email && !p.email.endsWith("@" + ME.domain));
+      const internal = parts.filter((p) => p.email && p.email.endsWith("@" + ME.domain) && p.email.toLowerCase() !== ME.email && p.attended);
+      return {
+        id: m.id, title: m.title || "Untitled meeting", at: m.start_time_ms, report: m.report_url,
+        summary: m.summary || "", actions: m.action_items || [],
+        to: external.filter((p) => p.attended || p.invited).map((p) => p.email),
+        toNames: external.filter((p) => p.attended).map((p) => p.name || p.email),
+        cc: internal.map((p) => p.email),
+      };
+    });
+  }
+  function renderMeetings() {
+    const el = $("fu"), ms = state.meetings;
+    if (!ms) return;
+    if (!ms.length) { el.innerHTML = `<div class="msg">▸ No outstanding follow-ups from the last 10 days.</div>`; return; }
+    el.innerHTML = ms.map((m) => {
+      const d = state.drafts[m.id];
+      return `<div class="fu" data-id="${esc(m.id)}">
+        <div class="top"><div class="ti">${esc(m.title)}</div><div class="ago">${ago(m.at)}</div></div>
+        <ul>${m.actions.slice(0, 4).map((a) => `<li>${esc(a)}</li>`).join("")}</ul>
+        <div class="acts">
+          <button class="rowbtn gold" type="button" data-draft="${esc(m.id)}" ${d?.busy ? "disabled" : ""}>${d?.busy ? "Drafting…" : d ? "Redraft" : "Draft follow-up"}</button>
+          ${m.report ? `<a class="rowbtn" href="${esc(m.report)}" target="_blank" rel="noopener">Report</a>` : ""}
+        </div>
+        ${d && !d.busy ? draftHTML(m, d) : ""}
+      </div>`;
+    }).join("");
+  }
+  function draftHTML(m, d) {
+    if (d.error) return `<div class="draft"><div class="note err">${esc(d.error)}</div></div>`;
+    return `<div class="draft">
+      <div class="lbl">Staged draft · review before sending</div>
+      <div class="to">To: ${esc(m.to.join(", ") || "—")}${m.cc.length ? `<br>Cc: ${esc(m.cc.join(", "))}` : ""}</div>
+      <input id="subj-${esc(m.id)}" value="${esc(d.subject)}" aria-label="Subject">
+      <textarea id="body-${esc(m.id)}" aria-label="Email body">${esc(d.body)}</textarea>
+      <div class="row">
+        <button class="rowbtn gold" type="button" data-stage="${esc(m.id)}" ${d.staging || d.staged ? "disabled" : ""}>${d.staged ? "Staged" : d.staging ? "Staging…" : "Save to Gmail drafts"}</button>
+        <span class="note ${d.noteCls || ""}">${d.note || "Nothing is sent. It lands in your Gmail drafts."}</span>
+      </div>
+    </div>`;
+  }
+  const STYLE = `Santino's email style (match it closely): short, warm, professional, no fluff. Opens with "Hi <first name>," or "Hi Everyone," / "Gentlemen,". Thanks them for their time, then gets straight to the point. Uses numbered points when answering questions. Closes with "Best," on its own line followed by "Santino". Example:
+"Gentlemen, Thank you again for making time for the call today. I wanted to follow back with the initial OMS Features list and US Regulatory Fact sheet for your review; both are attached. We're happy to discuss any specific area in greater detail. Please let me know if you have any other questions, and we look forward to continuing the conversation. Best"`;
+  async function draftFollowUp(id) {
+    const m = state.meetings.find((x) => x.id === id); if (!m) return;
+    const sample = await use("sample");
+    if (!sample) { state.drafts[id] = { error: "Drafting needs Claude access, which isn't available in this view." }; renderMeetings(); return; }
+    state.drafts[id] = { busy: true }; renderMeetings();
+    const prompt = `You are drafting a post-meeting follow-up email for ${ME.name} Lopez (US business development, Quod Financial, a multi-asset OMS/EMS vendor).
+${STYLE}
+
+Meeting: ${m.title}
+Date: ${new Date(m.at).toDateString()}
+External attendees: ${m.toNames.join(", ") || m.to.join(", ")}
+Action items captured:
+${m.actions.map((a) => "- " + a).join("\n")}
+
+Meeting summary:
+${m.summary.slice(0, 3500)}
+
+Write the follow-up: thank them, recap agreed next steps in 2-5 crisp points (owner + action), and propose the concrete next touchpoint. Do not invent attachments or facts that aren't in the summary. Plain text only, no markdown.
+Reply with only JSON: {"subject": string, "body": string}`;
+    try {
+      const out = await sample.json(prompt, { modelTier: "default", cache: false });
+      state.drafts[id] = { subject: String(out?.subject || `Follow-up: ${m.title}`), body: String(out?.body || "") };
+      setSys("sys-ai", "online");
+    } catch (e) {
+      const copy = { not_granted: "Claude access was declined for this page.", rate_limited: "Usage limit reached. Try again in a bit.", invalid_json: "The draft came back malformed. Try Redraft.", refused: "Claude declined to draft this one.", sampling_disabled: "Claude isn't available on this account." };
+      state.drafts[id] = { error: copy[e?.code] || "Drafting failed. Try again." };
+      if (["not_granted", "sampling_disabled"].includes(e?.code)) setSys("sys-ai", "offline");
+    }
+    renderMeetings();
+  }
+  async function stageDraft(id) {
+    const m = state.meetings.find((x) => x.id === id), d = state.drafts[id]; if (!m || !d) return;
+    d.subject = $("subj-" + id).value; d.body = $("body-" + id).value;
+    const mcp = await use("mcp");
+    if (!mcp) { d.note = "Gmail isn't reachable from this view."; d.noteCls = "err"; renderMeetings(); return; }
+    d.staging = true; d.note = "Saving to Gmail drafts…"; d.noteCls = ""; renderMeetings();
+    try {
+      const r = await mcp.callTool("Gmail", "create_draft", { to: m.to, cc: m.cc, subject: d.subject, body: d.body });
+      const url = r?.payload?.viewUrl;
+      d.staged = true; d.staging = false; d.noteCls = "ok";
+      d.note = url ? "Saved. " : "Saved to your Gmail drafts.";
+      renderMeetings();
+      if (url) { const n = document.querySelector(`.fu[data-id="${CSS.escape(id)}"] .note`); if (n) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open in Gmail ↗"; n.append(a); } }
+    } catch (e) {
+      d.staging = false; d.noteCls = "err";
+      d.note = e?.code === "server_unavailable" || e?.code === "upstream_error"
+        ? "Gmail didn't confirm. Check your drafts before trying again."
+        : e?.code === "needs_reauth" ? "Reconnect Gmail in claude.ai Settings → Connectors." : `Couldn't save (${e?.code || "error"}).`;
+      renderMeetings();
+    }
+  }
+  $("fu").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-draft]"); if (a) return void draftFollowUp(a.dataset.draft);
+    const s = e.target.closest("[data-stage]"); if (s) return void stageDraft(s.dataset.stage);
+  });
+  $("fu").addEventListener("input", (e) => {
+    const t = e.target, id = t.id.replace(/^(subj|body)-/, ""), d = state.drafts[id]; if (!d) return;
+    if (t.id.startsWith("subj-")) d.subject = t.value; else d.body = t.value;
+  });
+
+  /* ---------- Inbox (Gmail) ---------- */
+  function shapeMail(payload) {
+    return (payload?.threads || []).map((t) => {
+      const m = (t.messages || [])[0] || {};
+      const last = (t.messages || []).at(-1) || m;
+      return { id: t.id, url: t.viewUrl, subject: (m.subject || "(no subject)").replace(/^\[External\]\s*/i, ""), sender: last.sender || m.sender || "", snippet: last.snippet || m.snippet || "", at: Number(last.internalDate || m.internalDate) || Date.parse(last.date || m.date) || 0, count: t.messageCount || 1 };
+    }).filter((x) => !x.sender.toLowerCase().includes(ME.email));
+  }
+  function renderMail() {
+    const el = $("inbox"), mail = state.mail;
+    if (!mail) return;
+    if (!mail.length) { el.innerHTML = `<div class="msg">▸ Inbox clear. No unread conversations from the last 3 days.</div>`; return; }
+    el.innerHTML = mail.slice(0, 8).map((t) => `<div class="mail">
+      <div class="who"><span>${esc(t.sender)}</span><span>${t.at ? fmtHM.format(new Date(t.at)) + " · " + ago(t.at) : ""}</span></div>
+      <div class="sub">${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.subject)}</a>` : esc(t.subject)}${t.count > 1 ? ` <span class="chip dim">${t.count}</span>` : ""}</div>
+      <div class="snip">${esc(t.snippet)}</div>
+    </div>`).join("");
+  }
+
+  /* ---------- Live links ---------- */
+  function watch(mcp, server, tool, input, opts, sysId, stampId, onData, elId) {
+    mcp.watchTool(server, tool, input, (ev) => {
+      if (ev.type === "data") { setSys(sysId, "online"); stamp(stampId, ev.result); onData(ev.result.payload); renderKPIs(); return; }
+      const code = ev.error?.code;
+      if (isDenial(code)) { setSys(sysId, "offline"); onData(null, true); $(elId).innerHTML = errHTML(server, ev.error); return; }
+      if (!$(elId).querySelector("table, .evt, .fu, .mail")) { setSys(sysId, "offline"); $(elId).innerHTML = errHTML(server, ev.error); }
+      else $(stampId).textContent = "SYNC DELAYED";
+    }, opts);
+  }
+
+  async function boot() {
+    const mcp = await use("mcp");
+    if (!mcp) {
+      for (const s of ["sys-zoho", "sys-cal", "sys-gmail", "sys-read"]) setSys(s, "offline");
+      const off = `<div class="msg err">▸ Live data isn't available here. Open this page in claude.ai to bring the deck online.</div>`;
+      for (const id of ["tasks", "eng", "board", "fu", "inbox"]) $(id).innerHTML = off;
+    } else {
+      const coql = `select Deal_Name, Rating, Stage, Amount, Closing_Date, Next_Step, Modified_Time, Account_Name.Account_Name from Deals where ((Owner.email = '${ME.email}' and Rating in ('1. Critical', '2. Very Hot', '3. Hot')) and (Stage not like '%Closed%' and Stage not like '%Won%')) order by Modified_Time desc limit 0, 200`;
+      watch(mcp, "Zoho CRM", "executeCOQLQuery", { body: { select_query: coql } }, { refetchInterval: 600000, cache: { staleTime: 120000 } },
+        "sys-zoho", "st-zoho", (p, denied) => {
+          if (denied) { state.deals = null; return; }
+          const rows = p?.data?.data || p?.data || [];
+          state.deals = (Array.isArray(rows) ? rows : []).map(shapeDeal);
+          renderBoard();
+        }, "board");
+
+      const tomorrowEnd = new Date(+today0 + 2 * DAY);
+      watch(mcp, "Google Calendar", "list_events", { startTime: isoLocal(today0), endTime: isoLocal(tomorrowEnd), orderBy: "startTime", pageSize: 60, timeZone: TZ }, { refetchInterval: 300000, cache: { staleTime: 60000 } },
+        "sys-cal", "st-cal", (p, denied) => { state.events = denied ? null : shapeEvents(p); renderEvents(); }, "eng");
+
+      watch(mcp, "Gmail", "search_threads", { query: "in:inbox is:unread newer_than:3d -category:promotions -category:social -category:updates -category:forums", pageSize: 15 }, { refetchInterval: 180000, cache: { staleTime: 60000 } },
+        "sys-gmail", "st-gmail", (p, denied) => { state.mail = denied ? null : shapeMail(p); renderMail(); }, "inbox");
+
+      const since = new Date(+today0 - 10 * DAY).toISOString();
+      watch(mcp, "read.ai", "list_meetings", { limit: 10, start_datetime_gte: since, expand: ["action_items", "summary"] }, { refetchInterval: 900000, cache: { staleTime: 300000 } },
+        "sys-read", "st-read", (p, denied) => { state.meetings = denied ? null : shapeMeetings(p); renderMeetings(); }, "fu");
+    }
+    const sample = await use("sample");
+    setSys("sys-ai", sample ? "online" : "offline");
+    if (!sample) { $("ask").placeholder = "Claude isn't available in this view."; $("ask-btn").disabled = true; $("quick").hidden = true; }
+  }
+  boot();
+
+  /* ---------- Ask QARVIS ---------- */
+  let turns = [], ctl = null;
+  function snapshot() {
+    const d = (state.deals || []).slice().sort((a, b) => b.score - a.score).slice(0, 40).map((x) => ({
+      account: x.acct, deal: x.name, rating: x.rating.t, stage: x.stage, value: x.amount, next_step: x.next.text || null,
+      next_step_date: x.next.date ? x.next.date.toISOString().slice(0, 10) : null,
+      close_date: x.close ? x.close.toISOString().slice(0, 10) : null, flags: x.flags.map((f) => f.t),
+    }));
+    const tk = (state.events || []).filter((e) => e.isTask).map((e) => ({ task: e.title, source: "google", day: e.day === 0 ? "today" : "tomorrow", time: e.scheduled ? `${fmtHM.format(e.start)}-${fmtHM.format(e.end)}` : "any time" }))
+      .concat((state.mytasks || []).filter((t) => !t.done).slice(0, 60).map((t) => ({ task: t.title, source: "qarvis", due: t.due, account: t.account, tag: t.tag })));
+    const ev = (state.events || []).filter((e) => !e.isTask).map((e) => ({ title: e.title, start: e.allDay ? "all-day" : e.start.toISOString(), day: e.day === 0 ? "today" : "tomorrow", external_domains: e.domains }));
+    const fu = (state.meetings || []).map((m) => ({ meeting: m.title, date: new Date(m.at).toISOString().slice(0, 10), action_items: m.actions, summary: m.summary.slice(0, 900), drafted: !!state.drafts[m.id]?.staged }));
+    const mail = (state.mail || []).slice(0, 10).map((t) => ({ from: t.sender, subject: t.subject, snippet: t.snippet }));
+    return JSON.stringify({ now: new Date().toString(), tasks: tk, deals: d, calendar: ev, follow_ups: fu, unread_inbox: mail });
+  }
+  const RULES = () => `You are Q.A.R.V.I.S., the AI chief of staff for ${ME.name} Lopez, who runs US business development at Quod Financial (a multi-asset OMS/EMS vendor; products include Quod OMS/EMS, Qanvas, Quazar, Qronos, algos and program trading).
+Voice: composed, precise, a touch of dry wit (one light remark at most). Address the user only as "Santino" and never use gendered honorifics like "sir".
+Format: start with a one-line status beginning "▸". Then short labelled lines or tight bullets. Plain text, no markdown headers or bold. Be specific: name accounts, dates and dollar values from the data. If the data doesn't answer something, say so plainly; never invent facts.
+You can log tasks with the add_task tool when asked to log, add, remember or follow up on something; confirm what you added with its due date. Today is ${ymd(today0)}.
+Live data from the dashboard (open tasks from the Qarvis list and Google,  Zoho deals rated Hot, Very Hot or Critical, calendar for today/tomorrow, Read.ai follow-ups from the last 10 days, unread inbox):
+${snapshot()}`;
+  async function ask(q) {
+    q = (q || "").trim(); if (!q) return;
+    const sample = await use("sample"); if (!sample) return;
+    ctl?.abort(); ctl = new AbortController();
+    $("answer").hidden = false; $("ans-q").textContent = "▸ " + q; $("ans-body").textContent = "Thinking…";
+    $("ans-state").textContent = "Processing"; $("ans-stop").hidden = false; $("ask-btn").disabled = true;
+    turns.push({ role: "user", content: q });
+    if (turns.length > 12) turns = turns.slice(-12);
+    if (turns[0].role !== "user") turns.shift();
+    try {
+      const lim = await sample.limits().catch(() => null);
+      const tools = lim?.tools && taskDb ? [{
+        name: "add_task",
+        description: "Add one task to Santino's Qarvis task list. Returns {ok, id}. Use once per task.",
+        inputSchema: { type: "object", properties: { title: { type: "string", description: "Short imperative task title" }, due: { type: "string", description: "Due date YYYY-MM-DD, or omit" }, account: { type: "string", description: "Company name, if any" }, tag: { type: "string", description: "Short tag such as STA" } }, required: ["title"] },
+        execute: async (input) => { const t = cleanTask(input); if (!t) throw new Error("title is required"); const [id] = await saveTasks([t]); return { ok: true, id, due: t.due }; },
+      }] : null;
+      const { text } = await sample([{ role: "user", content: RULES() }, ...turns], {
+        ...(tools ? { tools } : { cache: false }), signal: ctl.signal,
+        onText: ({ text }) => { $("ans-body").textContent = text; $("ans-state").textContent = "Transmitting"; },
+      });
+      turns.push({ role: "assistant", content: text });
+      $("ans-state").textContent = "Response";
+    } catch (e) {
+      turns.pop();
+      $("ans-body").textContent = e?.text || "";
+      const copy = { cancelled: "Stopped.", not_granted: "Claude access was declined for this page.", rate_limited: "Usage limit reached. Try again shortly.", refused: "That request was declined. Try rephrasing.", session_expired: "Sign in to claude.ai again.", prompt_too_large: "Too much data for one question. Try a narrower ask." };
+      $("ans-state").textContent = copy[e?.code] || "Interrupted. Ask again.";
+    } finally {
+      $("ans-stop").hidden = true; $("ask-btn").disabled = false;
+    }
+  }
+  $("ask-form").addEventListener("submit", (e) => { e.preventDefault(); const v = $("ask").value; $("ask").value = ""; ask(v); });
+  $("quick").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
+  $("ans-stop").addEventListener("click", () => ctl?.abort());
+  $("ans-close").addEventListener("click", () => { ctl?.abort(); $("answer").hidden = true; });
+})();
+</script>
