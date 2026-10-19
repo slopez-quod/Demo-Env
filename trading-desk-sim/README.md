@@ -42,6 +42,7 @@ Each trading day number is a different, reproducible market. Replay a day to try
 
 ## Learning tools
 
+- **How to read this** dropdown on every morning-note item: anatomy of the item, the economics behind it, and questions to ask before the open.
 - **Decode** on every note and headline: what it says, why it matters, what to expect, and what it
   means if you are buying or selling, plus a live check against what the stock is doing.
 - **Coach** tab: real-time observations a senior trader would make.
@@ -71,6 +72,7 @@ js/data.js        universe, brokers, clients, roles, glossary, playbook
 js/market.js      price/volume/spread engine, tape, events, closing auction
 js/orders.js      client orders, algo execution, blocks, futures
 js/notes.js       broker notes, macro, flow color, squawk + decoders
+js/guides.js      "How to read this" guides and econ basics for each note type
 js/scenarios.js   role scripts: orders, chats, decision points
 js/pt.js          program trading analytics, risk bid, balancing
 js/coach.js       coach rules

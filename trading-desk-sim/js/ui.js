@@ -513,7 +513,7 @@ window.DS = window.DS || {};
       var box = $('#tab-notes');
       box.innerHTML = '<div class="sec-h">Morning note · ' + s.dateStr + '</div>' + s.notes.map(function (n) {
         var mine = n.tkr && s.orders.some(function (p) { return p.tkr === n.tkr; });
-        return '<div class="nitem"><div class="nh"><span class="cat">' + n.cat + '</span>' + (mine ? '<span class="mine-tag">YOUR NAME</span>' : '') + '</div><div class="hd">' + esc(n.head) + '</div><div class="bd">' + esc(n.body) + '</div><div class="act"><button class="btn sm" data-dec="' + n.id + '">Decode</button>' + (n.tkr ? '<button class="btn sm ghost" data-load="' + n.tkr + '">Load ' + n.tkr + '</button>' : '') + '</div></div>';
+        return '<div class="nitem"><div class="nh"><span class="cat">' + n.cat + '</span>' + (mine ? '<span class="mine-tag">YOUR NAME</span>' : '') + '</div><div class="hd">' + esc(n.head) + '</div><div class="bd">' + esc(n.body) + '</div>' + DS.readGuideHTML(n) + '<div class="act"><button class="btn sm" data-dec="' + n.id + '">Decode</button>' + (n.tkr ? '<button class="btn sm ghost" data-load="' + n.tkr + '">Load ' + n.tkr + '</button>' : '') + '</div></div>';
       }).join('');
     },
     renderCoach: function (s) {
@@ -641,7 +641,7 @@ window.DS = window.DS || {};
       ov.innerHTML = '<div class="card wide"><h1><small>Morning meeting · 08:45 · ' + s.dateStr + '</small>' + DS.ROLES[s.role].title + ': read the note</h1>' +
         '<p class="lead">Every desk starts here. Read each item and ask: does this move a stock I might trade, and does it change how I would trade it? For research and earnings items, call the expected impact before you decode it.</p>' +
         s.notes.map(function (n) {
-          return '<div class="note"><span class="cat">' + n.cat + '</span><div class="hd">' + esc(n.head) + '</div><div class="bd">' + esc(n.body) + '</div>' +
+          return '<div class="note"><span class="cat">' + n.cat + '</span><div class="hd">' + esc(n.head) + '</div><div class="bd">' + esc(n.body) + '</div>' + DS.readGuideHTML(n) +
             (callable(n) ? '<div class="call" data-n="' + n.id + '"><span>Your call on the open:</span>' + ['Big', 'Modest', 'Noise'].map(function (x) { return '<button class="btn sm" data-call="' + x + '">' + (x === 'Big' ? 'Big mover (2%+)' : x === 'Modest' ? 'Modest (0.5-2%)' : 'Noise') + '</button>'; }).join('') + '<span class="res"></span></div>' : '') +
             '<div class="rowf"><button class="btn sm" data-dec="' + n.id + '">Decode</button></div><div class="dx" hidden></div></div>';
         }).join('') +
