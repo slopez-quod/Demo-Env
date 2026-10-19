@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agency Desk Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+<div id="app" data-view="stock">
+  <header class="top">
+    <div class="brand"><span class="mark">AD</span><div><b>Agency Desk</b><small id="roleChip">Simulator</small></div></div>
+    <div class="clockbox">
+      <div id="clock" class="clock">08:45</div>
+      <div class="phase" id="phase">PRE-MARKET</div>
+    </div>
+    <div class="ctrls" role="group" aria-label="Simulation speed">
+      <button id="btnPlay" class="btn play" title="Play / pause (Space)">▶</button>
+      <button class="btn spd" data-spd="1.5" title="15 sim seconds per second">¼×</button>
+      <button class="btn spd on" data-spd="6" title="1 sim minute per second">1×</button>
+      <button class="btn spd" data-spd="18" title="3 sim minutes per second">3×</button>
+      <button class="btn spd" data-spd="60" title="10 sim minutes per second">10×</button>
+      <label class="ap" title="Pause automatically when a client or sales trader needs an answer"><input type="checkbox" id="autoPause" checked> auto-pause</label>
+    </div>
+    <div class="mstrip" id="mstrip"></div>
+    <div class="topbtns">
+      <button class="btn ghost" data-open="notes">Morning note</button>
+      <button class="btn ghost" data-open="playbook">Playbook</button>
+      <button class="btn ghost" data-open="glossary">Glossary</button>
+      <button class="btn ghost" id="btnMenu">Menu</button>
+    </div>
+  </header>
+
+  <main class="desk">
+    <section class="col left panel" data-pane="orders">
+      <div class="ph"><h2 id="leftTitle">Client orders</h2><span class="sub" id="leftSub"></span></div>
+      <div id="basketBox" hidden></div>
+      <div id="blotter" class="blotter"></div>
+    </section>
+
+    <section class="col center" data-pane="stock">
+      <div class="panel stockpanel">
+        <div class="sthead" id="sthead"></div>
+        <div class="chartwrap"><canvas id="chart" aria-label="Intraday price chart"></canvas><div class="legend" id="legend"></div></div>
+        <div class="bt">
+          <div class="book"><div class="ph sm"><h3>Level 2</h3><span class="sub" id="bookSub"></span></div><div id="book"></div></div>
+          <div class="tape"><div class="ph sm"><h3>Time &amp; sales</h3><span class="sub" id="aggSub"></span></div><div id="aggbar" class="aggbar"><i></i></div><div id="tape"></div></div>
+        </div>
+      </div>
+      <div class="panel ticketpanel" id="ticket"></div>
+    </section>
+
+    <section class="col right panel" data-pane="feed">
+      <nav class="tabs" role="tablist">
+        <button class="tab on" data-tab="chat">Chat <i id="bChat"></i></button>
+        <button class="tab" data-tab="news">Squawk <i id="bNews"></i></button>
+        <button class="tab" data-tab="notes">Research</button>
+        <button class="tab" data-tab="coach">Coach <i id="bCoach"></i></button>
+      </nav>
+      <div class="tabbody" id="tab-chat"></div>
+      <div class="tabbody" id="tab-news" hidden></div>
+      <div class="tabbody" id="tab-notes" hidden></div>
+      <div class="tabbody" id="tab-coach" hidden></div>
+    </section>
+
+    <section class="col watch panel" data-pane="market">
+      <div class="ph"><h2>Market monitor</h2><span class="sub">Click a name to load it</span></div>
+      <div id="sectors" class="sectors"></div>
+      <div class="wlwrap"><table class="wl" id="wl"><thead><tr><th>Tkr</th><th>Last</th><th>Chg</th><th title="Move vs its sector">vs Sec</th><th title="Volume vs normal for this time of day">RVol</th><th title="Quoted spread in bps">Spr</th><th title="Share of volume printing at the offer">Buy%</th><th title="Closing imbalance (from 15:50)">Imb</th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </main>
+
+  <nav class="mnav" aria-label="Panels">
+    <button data-view="orders">Orders</button><button data-view="stock" class="on">Stock</button><button data-view="feed">Chat &amp; news</button><button data-view="market">Market</button>
+  </nav>
+</div>
+
+<!-- Overlays -->
+<div class="ov" id="ovHome" hidden></div>
+<div class="ov" id="ovMorning" hidden></div>
+<div class="ov" id="ovPretrade" hidden></div>
+<div class="ov" id="ovDecision" hidden></div>
+<div class="ov" id="ovDecode" hidden></div>
+<div class="ov" id="ovEod" hidden></div>
+<div class="ov" id="ovMenu" hidden></div>
+<aside class="drawer" id="drawer" hidden></aside>
+<div class="tip" id="gtip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/market.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/desk.js"></script>
+<script src="js/notes.js"></script>
+<script src="js/pt.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/coach.js"></script>
+<script src="js/tca.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
