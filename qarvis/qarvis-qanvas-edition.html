@@ -229,6 +229,28 @@ form.bar button:disabled { opacity: .5; cursor: default; }
 .task .del { background: transparent; border: 0; color: var(--faint); cursor: pointer; font-size: 13px; padding: 0 2px; }
 .task .del:hover, .task .del.arm { color: var(--red); }
 .task .del.arm { font-size: 11px; font-weight: 700; }
+
+.switch { font-size: 11px; font-weight: 700; padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--head); color: var(--dim); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.switch::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.switch[aria-pressed="true"] { color: #fff; border-color: var(--orange); background: var(--orange-soft); }
+.switch[aria-pressed="true"]::before { background: var(--orange); }
+.appr { border: 1px solid var(--line); border-left: 3px solid var(--orange); border-radius: 4px; background: var(--head); padding: 8px 10px; display: grid; gap: 5px; }
+.appr + .appr { margin-top: 8px; }
+.appr .k { font-size: 10.5px; font-weight: 700; color: var(--orange-hi); text-transform: uppercase; letter-spacing: .05em; }
+.appr .sum { font-weight: 600; overflow-wrap: anywhere; }
+.appr .det { font-size: 12px; color: var(--dim); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow-y: auto; }
+.appr .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.appr .st { font-size: 11.5px; color: var(--dim); }
+.appr.done { border-left-color: var(--green); } .appr.done .st { color: var(--green); }
+.appr.err { border-left-color: var(--red); } .appr.err .st { color: var(--red); }
+.appr.rejected { opacity: .55; border-left-color: var(--faint); }
+.brief-sum { font-size: 13px; overflow-wrap: anywhere; margin-bottom: 8px; }
+.brief-sec + .brief-sec { margin-top: 10px; }
+.bitem { padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.bitem:first-of-type { border-top: 0; }
+.bitem .bt { font-weight: 600; overflow-wrap: anywhere; }
+.bitem .bd { font-size: 12px; color: var(--dim); overflow-wrap: anywhere; white-space: pre-wrap; }
+.bitem details summary { cursor: pointer; color: var(--blue); font-size: 12px; }
 </style>
 
 <header class="rail">
@@ -239,6 +261,7 @@ form.bar button:disabled { opacity: .5; cursor: default; }
     <div class="greet" id="greet">Initializing…</div>
   </div>
   <div class="rail-right">
+    <button class="switch" id="campaign-toggle" type="button" aria-pressed="false" title="When on, Quod IQ can research prospects and propose Zoho leads and outreach drafts for your approval">Campaign mode · Off</button>
     <div class="clock"><div class="t" id="clock">--:--:--</div><div class="d" id="date">—</div></div>
   </div>
 </header>
@@ -271,6 +294,10 @@ form.bar button:disabled { opacity: .5; cursor: default; }
   </div>
 
   <div class="col board-col">
+    <section class="panel" aria-labelledby="h-brief">
+      <div class="ph"><h2 id="h-brief">Morning briefing</h2><span class="src">Autopilot</span><span class="stamp" id="st-brief"></span></div>
+      <div class="pb" id="brief"><div class="msg">Autopilot runs weekdays at 6:50 AM ET and leaves your briefing here.</div></div>
+    </section>
     <section class="panel" aria-labelledby="h-board">
       <div class="ph">
         <h2 id="h-board">The Board</h2><span class="src">Hot · Very Hot · Critical</span>
@@ -287,6 +314,10 @@ form.bar button:disabled { opacity: .5; cursor: default; }
   </div>
 
   <div class="col">
+    <section class="panel" aria-labelledby="h-appr">
+      <div class="ph"><h2 id="h-appr">Approvals</h2><span class="src">Quod IQ actions</span><button class="rowbtn" id="appr-all" type="button" hidden style="margin-left:auto">Approve all</button></div>
+      <div class="pb" id="approvals"><div class="msg">Nothing waiting. Anything Quod IQ wants to change in Zoho, Calendar or Gmail lands here first.</div></div>
+    </section>
     <section class="panel" aria-labelledby="h-fu">
       <div class="ph"><h2 id="h-fu">Follow-ups owed</h2><span class="src">Read.ai</span><span class="stamp" id="st-read"></span></div>
       <div class="pb" id="fu"><div class="scan"></div><div class="msg">Reviewing recent meetings…</div></div>
@@ -308,6 +339,7 @@ form.bar button:disabled { opacity: .5; cursor: default; }
     <div class="quick" id="quick">
       <button type="button">What should I focus on today?</button>
       <button type="button">What's on my task list, and what's overdue?</button>
+      <button type="button">Draft replies to my unread client emails.</button>
       <button type="button">Which deals are slipping, and what should I do about each?</button>
       <button type="button">Prep me for my next external meeting.</button>
       <button type="button">Which follow-ups have I not sent yet?</button>
@@ -835,6 +867,177 @@ Reply with only JSON: {"subject": string, "body": string}`;
     </div>`).join("");
   }
 
+  /* ---------- Agent layer: approvals, campaign mode, briefing ---------- */
+  state.pending = []; state.campaign = false; state.dealNames = {};
+  const MONS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const zohoNext = (dateStr, text) => { const d = fromYmd(dateStr); return d ? `${String(d.getDate()).padStart(2, "0")}-${MONS[d.getMonth()]}-${d.getFullYear()} - ${text}` : text; };
+  const sq = (v) => String(v || "").replace(/['"\\%]/g, " ").trim().slice(0, 60);
+  function propose(kind, summary, detail, run) {
+    const id = "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    state.pending.unshift({ id, kind, summary, detail, run, status: "pending", note: "" });
+    renderApprovals();
+    return { queued: true, approval_id: id, note: "Queued in the Approvals panel. It has NOT run yet; tell Santino it is waiting for Santino's approval." };
+  }
+  function renderApprovals() {
+    const el = $("approvals"), list = state.pending.slice(0, 30);
+    const waiting = list.filter((a) => a.status === "pending").length;
+    $("appr-all").hidden = waiting < 2;
+    if (!list.length) { el.innerHTML = `<div class="msg">Nothing waiting. Anything Quod IQ wants to change in Zoho, Calendar or Gmail lands here first.</div>`; return; }
+    el.innerHTML = list.map((a) => `<div class="appr ${a.status === "done" ? "done" : a.status === "error" ? "err" : a.status === "rejected" ? "rejected" : ""}">
+      <div class="k">${esc(a.kind)}</div><div class="sum">${esc(a.summary)}</div>${a.detail ? `<div class="det">${esc(a.detail)}</div>` : ""}
+      <div class="row">${a.status === "pending" ? `<button class="rowbtn gold" type="button" data-approve="${a.id}">Approve</button><button class="rowbtn" type="button" data-reject="${a.id}">Reject</button>`
+        : `<span class="st">${a.status === "running" ? "Running…" : a.status === "rejected" ? "Rejected" : esc(a.note)}</span>${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener">Open ↗</a>` : ""}`}</div>
+    </div>`).join("");
+    renderGreeting();
+  }
+  async function runApproval(a) {
+    if (!a || a.status !== "pending") return;
+    a.status = "running"; renderApprovals();
+    try { const r = await a.run(); a.status = "done"; a.note = r?.note || "Done."; a.link = r?.link || ""; }
+    catch (e) {
+      const c = e?.code; a.status = "error";
+      a.note = c === "server_unavailable" || c === "upstream_error" ? "No confirmation came back. Check before trying again." : c === "needs_reauth" ? "Reconnect this connector in claude.ai Settings → Connectors." : c === "not_in_manifest" ? "This connector is turned off for the page (Permissions menu)." : c === "tool_error" ? `Rejected: ${String(e?.message || "").slice(0, 160)}` : `Failed (${c || "error"}).`;
+    }
+    renderApprovals();
+  }
+  $("approvals").addEventListener("click", (e) => {
+    const ap = e.target.closest("[data-approve]"); if (ap) return void runApproval(state.pending.find((x) => x.id === ap.dataset.approve));
+    const rj = e.target.closest("[data-reject]"); if (rj) { const a = state.pending.find((x) => x.id === rj.dataset.reject); if (a && a.status === "pending") { a.status = "rejected"; renderApprovals(); } }
+  });
+  $("appr-all").addEventListener("click", async () => { for (const a of state.pending.filter((x) => x.status === "pending")) await runApproval(a); });
+
+  async function mcpCall(server, tool, input) { const mcp = await use("mcp"); if (!mcp) throw { code: "not_granted" }; return (await mcp.callTool(server, tool, input)).payload; }
+  function buildTools() {
+    const T = [];
+    const ro = (name, description, props, required, fn) => T.push({ name, description, inputSchema: { type: "object", properties: props, required }, execute: fn });
+    if (taskDb) ro("add_task", "Add a task to Santino's Qarvis task list (internal, no approval needed). Returns {ok, id, due}.",
+      { title: { type: "string" }, due: { type: "string", description: "YYYY-MM-DD" }, account: { type: "string" }, tag: { type: "string" } }, ["title"],
+      async (i) => { const t = cleanTask(i); if (!t) throw new Error("title is required"); const [id] = await saveTasks([t]); return { ok: true, id, due: t.due }; });
+    ro("search_deals", "Find Santino's open Zoho deals by account or deal name (any rating). Returns id, name, account, stage, rating, next step, close date, amount.",
+      { text: { type: "string", description: "Account or deal name fragment" } }, ["text"],
+      async (i) => {
+        const q = sq(i.text); if (!q) throw new Error("text is required");
+        const p = await mcpCall("Zoho CRM", "executeCOQLQuery", { body: { select_query: `select Deal_Name, Stage, Rating, Amount, Closing_Date, Next_Step, Account_Name.Account_Name from Deals where (Owner.email = '${ME.email}' and (Deal_Name like '%${q}%' or Account_Name.Account_Name like '%${q}%')) limit 0, 15` } });
+        const rows = p?.data?.data || [];
+        for (const r of rows) state.dealNames[r.id] = `${r["Account_Name.Account_Name"] || ""} · ${r.Deal_Name}`;
+        return rows.map((r) => ({ id: r.id, name: r.Deal_Name, account: r["Account_Name.Account_Name"], stage: r.Stage, rating: r.Rating, next_step: r.Next_Step, close: r.Closing_Date, amount: r.Amount }));
+      });
+    ro("search_meetings", "Search what was said across Santino's Read.ai meetings (slow, ~30s). Returns meetings with a reason and a supporting passage.",
+      { query: { type: "string" } }, ["query"],
+      async (i) => { const p = await mcpCall("read.ai", "search_meeting_agent", { query: String(i.query).slice(0, 500), limit: 4, time_budget_sec: 30 }); return (p?.data || []).map((m) => ({ title: m.title, date: m.start_time, why: m.why, passage: String(m.passage || "").slice(0, 600) })); });
+    ro("read_email_thread", "Read an email thread from the unread inbox by its thread id. Returns messages with sender, recipients and plain-text bodies (truncated).",
+      { thread_id: { type: "string" } }, ["thread_id"],
+      async (i) => { const p = await mcpCall("Gmail", "get_thread", { threadId: String(i.thread_id), messageFormat: "PLAIN_TEXT" }); return (p?.messages || []).slice(-5).map((m) => ({ id: m.id, from: m.sender, to: m.toRecipients, cc: m.ccRecipients, date: m.date, subject: m.subject, body: String(m.plaintextBody || m.snippet || "").slice(0, 2500) })); });
+    ro("find_free_time", "Suggest free meeting slots for Santino plus attendees. Times are local Eastern, no offset (e.g. 2026-10-21T09:00:00).",
+      { attendee_emails: { type: "array", items: { type: "string" } }, start: { type: "string" }, end: { type: "string" }, duration_minutes: { type: "number" } }, ["start", "end"],
+      async (i) => mcpCall("Google Calendar", "suggest_time", { attendeeEmails: [ME.email, ...((i.attendee_emails || []).map(String))], startTime: String(i.start), endTime: String(i.end), durationMinutes: Number(i.duration_minutes) || 30, timeZone: TZ, preferences: { startHour: "08:30", endHour: "17:30", excludeWeekends: true, pageSize: 5 } }));
+    // ---- actions that need approval ----
+    ro("update_deal", "PROPOSE a Zoho deal update (queued for Santino's approval). Ratings: '1. Critical','2. Very Hot','3. Hot','4. Very Warm','5. Warm','6. Cool','7. Cold'. Stages: '1 Prospecting','2 Qualified','3 Proposal','4 Evaluation','5 Negotiation'.",
+      { deal_id: { type: "string" }, next_step: { type: "string" }, next_step_date: { type: "string", description: "YYYY-MM-DD" }, closing_date: { type: "string", description: "YYYY-MM-DD" }, stage: { type: "string" }, rating: { type: "string" } }, ["deal_id"],
+      async (i) => {
+        const id = String(i.deal_id).replace(/\D/g, ""); if (!id) throw new Error("deal_id is required");
+        const f = { id }, lines = [];
+        if (i.next_step) { f.Next_Step = zohoNext(i.next_step_date, String(i.next_step).slice(0, 250)); lines.push("Next step → " + f.Next_Step); }
+        if (fromYmd(i.closing_date)) { f.Closing_Date = i.closing_date; lines.push("Close date → " + i.closing_date); }
+        if (i.stage) { f.Stage = String(i.stage); lines.push("Stage → " + f.Stage); }
+        if (i.rating) { f.Rating = String(i.rating); lines.push("Rating → " + f.Rating); }
+        if (lines.length === 0) throw new Error("nothing to update");
+        const name = state.dealNames[id] || (state.deals || []).find((d) => d.id === id)?.acct || "Deal " + id;
+        return propose("Zoho · update deal", name, lines.join("\n"), async () => {
+          await mcpCall("Zoho CRM", "updateRecord", { path_variables: { module: "Deals", recordId: id }, body: { data: [f] } });
+          (await use("mcp"))?.invalidate("Zoho CRM", "executeCOQLQuery").catch(() => {});
+          return { note: "Updated in Zoho." };
+        });
+      });
+    ro("add_deal_note", "PROPOSE adding a note to a Zoho deal (queued for approval).",
+      { deal_id: { type: "string" }, title: { type: "string" }, content: { type: "string" } }, ["deal_id", "content"],
+      async (i) => {
+        const id = String(i.deal_id).replace(/\D/g, ""), title = String(i.title || "Note").slice(0, 120), content = String(i.content).slice(0, 5000);
+        const name = state.dealNames[id] || (state.deals || []).find((d) => d.id === id)?.acct || "Deal " + id;
+        return propose("Zoho · add note", `${name}: ${title}`, content, async () => {
+          await mcpCall("Zoho CRM", "createNotesModule", { body: { data: [{ Note_Title: title, Note_Content: content, Parent_Id: { module: { api_name: "Deals" }, id } }] } });
+          return { note: "Note added in Zoho." };
+        });
+      });
+    ro("create_meeting", "PROPOSE a calendar invite (queued for approval; invites go to attendees once approved). Times local Eastern without offset.",
+      { title: { type: "string" }, start: { type: "string" }, end: { type: "string" }, attendee_emails: { type: "array", items: { type: "string" } }, description: { type: "string" }, google_meet: { type: "boolean" } }, ["title", "start", "end"],
+      async (i) => {
+        const att = (i.attendee_emails || []).map(String).filter((m) => /@/.test(m));
+        return propose("Calendar · send invite", `${i.title} · ${String(i.start).replace("T", " ").slice(0, 16)}–${String(i.end).slice(11, 16)}`, (att.length ? "Invites: " + att.join(", ") + "\n" : "") + String(i.description || ""), async () => {
+          const r = await mcpCall("Google Calendar", "create_event", { summary: String(i.title), startTime: String(i.start), endTime: String(i.end), timeZone: TZ, attendees: att.map((email) => ({ email })), description: String(i.description || ""), addGoogleMeetUrl: !!i.google_meet });
+          (await use("mcp"))?.invalidate("Google Calendar").catch(() => {});
+          return { note: "Invite sent.", link: r?.htmlLink || "" };
+        });
+      });
+    ro("draft_email", "PROPOSE a Gmail draft (queued for approval; it only becomes a draft, never sent). Use Santino's style: short, warm, 'Best,' then 'Santino'. Pass reply_to_message_id to draft a reply.",
+      { to: { type: "array", items: { type: "string" } }, cc: { type: "array", items: { type: "string" } }, subject: { type: "string" }, body: { type: "string" }, reply_to_message_id: { type: "string" } }, ["to", "subject", "body"],
+      async (i) => {
+        const to = (i.to || []).map(String), cc = (i.cc || []).map(String);
+        return propose("Gmail · save draft", `${i.subject} → ${to.join(", ")}`, String(i.body), async () => {
+          const input = { to, cc, subject: String(i.subject), body: String(i.body) }; if (i.reply_to_message_id) input.replyToMessageId = String(i.reply_to_message_id);
+          const r = await mcpCall("Gmail", "create_draft", input);
+          return { note: "Saved to Gmail drafts.", link: r?.viewUrl || "" };
+        });
+      });
+    if (state.campaign) {
+      ro("find_prospects", "CAMPAIGN MODE: search SignalHire for people at a firm or by title/location (uses daily search quota, no credits). Returns name, title, company, location, uid.",
+        { company: { type: "string" }, title: { type: "string", description: "Boolean allowed, e.g. (electronic trading OR execution) AND head" }, location: { type: "string" }, size: { type: "number" } }, [],
+        async (i) => {
+          const p = await mcpCall("SignalHire", "search_candidates_query", { current_company: i.company ? String(i.company) : null, current_title: i.title ? String(i.title) : null, location: i.location ? String(i.location) : null, size: Math.min(Number(i.size) || 10, 25), response_format: "json" });
+          let data = p; if (typeof p?.result === "string") { try { data = JSON.parse(p.result); } catch { data = {}; } }
+          return { total: data?.total ?? null, people: (data?.profiles || []).map((x) => ({ uid: x.uid, name: x.fullName, location: x.location, title: x.experience?.[0]?.title || "", company: x.experience?.[0]?.company || "" })) };
+        });
+      ro("create_lead", "CAMPAIGN MODE: PROPOSE a new Zoho lead (queued for approval).",
+        { first_name: { type: "string" }, last_name: { type: "string" }, company: { type: "string" }, title: { type: "string" }, email: { type: "string" }, campaign: { type: "string", description: "e.g. STA 2026" }, notes: { type: "string" } }, ["last_name", "company"],
+        async (i) => {
+          const rec = { Last_Name: String(i.last_name), First_Name: i.first_name ? String(i.first_name) : undefined, Company: String(i.company), Designation: i.title ? String(i.title) : undefined, Email: i.email ? String(i.email) : undefined, Description: [i.campaign ? "Campaign: " + i.campaign : "", i.notes || ""].filter(Boolean).join("\n") || undefined };
+          return propose("Zoho · new lead", `${i.first_name || ""} ${i.last_name} · ${i.title || ""} @ ${i.company}`.replace(/\s+/g, " "), rec.Description || "", async () => {
+            await mcpCall("Zoho CRM", "createRecords", { path_variables: { module: "Leads" }, body: { data: [rec] } });
+            return { note: "Lead created in Zoho." };
+          });
+        });
+    }
+    return T;
+  }
+
+  // Campaign mode switch (stored so it survives reloads)
+  function renderCampaign() { const b = $("campaign-toggle"); b.setAttribute("aria-pressed", String(state.campaign)); b.textContent = `Campaign mode · ${state.campaign ? "On" : "Off"}`; }
+  $("campaign-toggle").addEventListener("click", async () => {
+    const next = !state.campaign; state.campaign = next; renderCampaign();
+    if (taskDb) { try { await taskDb.doc("settings/main").set({ campaignMode: next, changedAt: Date.now() }); } catch { state.campaign = !next; renderCampaign(); } }
+  });
+
+  // Morning briefing written by the Autopilot routine
+  function renderBrief(b) {
+    const el = $("brief");
+    if (!b) { el.innerHTML = `<div class="msg">Autopilot runs weekdays at 6:50 AM ET and leaves your briefing here.</div>`; return; }
+    $("st-brief").textContent = b.generatedAt ? "GENERATED " + fmtHM.format(new Date(b.generatedAt)) + (b.date && b.date !== ymd(today0) ? " · " + b.date : "") : "";
+    const sec = (title, arr, fn) => arr && arr.length ? `<div class="brief-sec"><div class="day-h">${esc(title)} · ${arr.length}</div>${arr.map(fn).join("")}</div>` : "";
+    const item = (x) => `<div class="bitem"><div class="bt">${x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</div>${x.detail ? `<div class="bd">${esc(x.detail)}</div>` : ""}</div>`;
+    el.innerHTML = (b.summary ? `<div class="brief-sum">${esc(b.summary)}</div>` : "")
+      + sec("Needs a reply", b.replies, item)
+      + sec("Board alerts", b.alerts, item)
+      + sec("Today's meetings", b.meetings, (m) => `<div class="bitem"><div class="bt">${esc(m.time ? m.time + " · " : "")}${esc(m.title)}</div><details><summary>Briefing</summary><div class="bd">${esc(m.brief || "")}</div></details></div>`)
+      + sec("Follow-ups drafted", b.followups, (f, i) => `<div class="bitem"><div class="bt">${esc(f.meeting || f.subject)}</div><div class="bd">To: ${esc((f.to || []).join(", "))}</div><details><summary>Review draft</summary><div class="bd">${esc(f.subject || "")}\n\n${esc(f.body || "")}</div></details><div style="margin-top:4px"><button class="rowbtn gold" type="button" data-brief-draft="${i}">Send to Approvals</button></div></div>`);
+    state.brief = b;
+  }
+  $("brief").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-brief-draft]"); if (!btn || !state.brief) return;
+    const f = (state.brief.followups || [])[Number(btn.dataset.briefDraft)]; if (!f) return;
+    btn.disabled = true; btn.textContent = "In Approvals";
+    propose("Gmail · save draft", `${f.subject} → ${(f.to || []).join(", ")}`, f.body || "", async () => {
+      const r = await mcpCall("Gmail", "create_draft", { to: f.to || [], cc: f.cc || [], subject: String(f.subject || ""), body: String(f.body || "") });
+      return { note: "Saved to Gmail drafts.", link: r?.viewUrl || "" };
+    });
+  });
+  async function bootAgent() {
+    renderApprovals();
+    const db = await use("db"); if (!db) return;
+    db.doc("settings/main").onSnapshot((d) => { state.campaign = !!(d.exists && d.data().campaignMode); renderCampaign(); }, () => {});
+    db.collection("briefings").orderBy("date", "desc").limit(1).onSnapshot((snap) => { renderBrief(snap.docs[0] ? snap.docs[0].data() : null); }, () => {});
+  }
+  bootAgent();
+
   /* ---------- Live links ---------- */
   function watch(mcp, server, tool, input, opts, sysId, stampId, onData, elId) {
     mcp.watchTool(server, tool, input, (ev) => {
@@ -883,7 +1086,7 @@ Reply with only JSON: {"subject": string, "body": string}`;
   let turns = [], ctl = null;
   function snapshot() {
     const d = (state.deals || []).slice().sort((a, b) => b.score - a.score).slice(0, 40).map((x) => ({
-      account: x.acct, deal: x.name, rating: x.rating.t, stage: x.stage, value: x.amount, next_step: x.next.text || null,
+      deal_id: x.id, account: x.acct, deal: x.name, rating: x.rating.t, stage: x.stage, value: x.amount, next_step: x.next.text || null,
       next_step_date: x.next.date ? x.next.date.toISOString().slice(0, 10) : null,
       close_date: x.close ? x.close.toISOString().slice(0, 10) : null, flags: x.flags.map((f) => f.t),
     }));
@@ -891,13 +1094,15 @@ Reply with only JSON: {"subject": string, "body": string}`;
       .concat((state.mytasks || []).filter((t) => !t.done).slice(0, 60).map((t) => ({ task: t.title, source: "qarvis", due: t.due, account: t.account, tag: t.tag })));
     const ev = (state.events || []).filter((e) => !e.isTask).map((e) => ({ title: e.title, start: e.allDay ? "all-day" : e.start.toISOString(), day: e.day === 0 ? "today" : "tomorrow", external_domains: e.domains }));
     const fu = (state.meetings || []).map((m) => ({ meeting: m.title, date: new Date(m.at).toISOString().slice(0, 10), action_items: m.actions, summary: m.summary.slice(0, 900), drafted: !!state.drafts[m.id]?.staged }));
-    const mail = (state.mail || []).slice(0, 10).map((t) => ({ from: t.sender, subject: t.subject, snippet: t.snippet }));
+    const mail = (state.mail || []).slice(0, 10).map((t) => ({ thread_id: t.id, from: t.sender, subject: t.subject, snippet: t.snippet }));
     return JSON.stringify({ now: new Date().toString(), tasks: tk, deals: d, calendar: ev, follow_ups: fu, unread_inbox: mail });
   }
   const RULES = () => `You are Q.A.R.V.I.S., the AI chief of staff for ${ME.name} Lopez, who runs US business development at Quod Financial (a multi-asset OMS/EMS vendor; products include Quod OMS/EMS, Qanvas, Quazar, Qronos, algos and program trading).
 Voice: composed, precise, a touch of dry wit (one light remark at most). Address the user only as "Santino" and never use gendered honorifics like "sir".
 Format: start with a one-line status beginning "▸". Then short labelled lines or tight bullets. Plain text, no markdown headers or bold. Be specific: name accounts, dates and dollar values from the data. If the data doesn't answer something, say so plainly; never invent facts.
-You can log tasks with the add_task tool when asked to log, add, remember or follow up on something; confirm what you added with its due date. Today is ${ymd(today0)}.
+Today is ${ymd(today0)}; Santino is in New York (Eastern time).
+Tools: add_task logs to the Qarvis list immediately. search_deals, search_meetings, read_email_thread and find_free_time are read-only. update_deal, add_deal_note, create_meeting and draft_email only QUEUE an action in the Approvals panel: nothing changes in Zoho, Calendar or Gmail until Santino clicks Approve, so always say it is waiting for approval and never claim it is done. Look up a deal_id (snapshot or search_deals) before proposing a deal change. Never invent email addresses.
+Campaign mode is ${state.campaign ? "ON: you may use find_prospects and propose create_lead and draft_email for outreach, every item queued for approval" : "OFF: do not prospect, create leads or draft campaign outreach; if asked, tell Santino to switch Campaign mode on in the top bar first"}.
 Live data from the dashboard (open tasks from the Qarvis list and Google,  Zoho deals rated Hot, Very Hot or Critical, calendar for today/tomorrow, Read.ai follow-ups from the last 10 days, unread inbox):
 ${snapshot()}`;
   async function ask(q) {
@@ -911,12 +1116,7 @@ ${snapshot()}`;
     if (turns[0].role !== "user") turns.shift();
     try {
       const lim = await sample.limits().catch(() => null);
-      const tools = lim?.tools && taskDb ? [{
-        name: "add_task",
-        description: "Add one task to Santino's Qarvis task list. Returns {ok, id}. Use once per task.",
-        inputSchema: { type: "object", properties: { title: { type: "string", description: "Short imperative task title" }, due: { type: "string", description: "Due date YYYY-MM-DD, or omit" }, account: { type: "string", description: "Company name, if any" }, tag: { type: "string", description: "Short tag such as STA" } }, required: ["title"] },
-        execute: async (input) => { const t = cleanTask(input); if (!t) throw new Error("title is required"); const [id] = await saveTasks([t]); return { ok: true, id, due: t.due }; },
-      }] : null;
+      const tools = lim?.tools ? buildTools() : null;
       const { text } = await sample([{ role: "user", content: RULES() }, ...turns], {
         ...(tools ? { tools } : { cache: false }), signal: ctl.signal,
         onText: ({ text }) => { $("ans-body").textContent = text; $("ans-state").textContent = "Transmitting"; },
